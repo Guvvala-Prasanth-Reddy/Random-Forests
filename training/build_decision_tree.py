@@ -52,9 +52,9 @@ def build_tree(df, split_metric='entropy'):
     
     # create branches from the node for all attributes of the selected feature
     node = Node(max_score_feature)
-    for feature_attribute in pd.unique(df[max_score_feature]):
-        branch = Branch(feature_attribute,
-                        build_tree(df[max_score_feature] == feature_attribute, split_metric))
+    for feature_value in pd.unique(df[max_score_feature]):
+        branch = Branch(feature_value,
+                        build_tree(df[max_score_feature] == feature_value, split_metric))
         node.add_branch(branch)
     
     return node
