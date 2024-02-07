@@ -36,3 +36,11 @@ def get_list_of_probabilities_classification( df , feature ):
     feature_values = pd.unique(df.get(feature))
     return np.array( lambda x : df.get(feature).count(x)/record_size  ( df.get(feature_values)) )
 
+def get_entropy_score(df : pd.DataFrame  , feature : str  ):
+    """ Returns the entropy calculation of dataframe by considering feature column as the target
+
+        Parameters:
+            df : The data before splitting on feature
+            feature : the feature i.e being considered for splitting criteria ( mainly target )
+    """
+    return np.sum( np.multiply( get_list_of_probabilities_classification(df , feature)  ,  np.log2( get_list_of_probabilities_classification(df,feature) )))
