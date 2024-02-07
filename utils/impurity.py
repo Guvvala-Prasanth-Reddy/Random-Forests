@@ -54,3 +54,13 @@ def get_gini_score(df : pd.DataFrame  , feature : str):
             feature : the feature i.e being considered for splitting criteria ( mainly target )
     """
     return ( 1 - np.square(get_list_of_probabilities_classification(df,feature)))
+
+    
+def get_misclassification_score(df : pd.DataFrame  , feature : str):
+    """ Returns the gini_index calculation of dataframe by considering feature column as the target
+
+        Parameters:
+            df : The data before splitting on feature
+            feature : the feature i.e being considered for splitting criteria ( mainly target )
+    """
+    return 1 - max( get_list_of_probabilities_classification(df , feature))
