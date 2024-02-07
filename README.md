@@ -4,6 +4,7 @@ Cs529 first project
 ## instructions to install the dependencies
 '''bash
 - python -m venv YOURVENV
+- YOURENV/Scripts/activate
 - pip install requirements.txt
 ''' 
 
