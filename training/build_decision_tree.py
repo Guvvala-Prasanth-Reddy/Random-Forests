@@ -1,5 +1,51 @@
 import pandas as pd
 from scipy.stats import chi2
+from utils.consts import *
+from tree.Leaf import Leaf
+from tree.Branch import Branch
+from tree.Node import Node
+from utils.impurity import *
+
+MISSING_VALUE_TERMS = ['notFound', float('NaN'), 'NaN']
+
+def handle_missing_values(df):
+    """ Cleans data frame of missing values.
+
+    Parameters:
+        df: a Pandas dataframe
+
+    Returns:
+        The provided dataframe without missing values
+    """
+
+    print(f'Number of rows in dataframe before handling missing values: {len(df)}')
+
+    # remove instances for which the target is not known
+    for i in range(len(MISSING_VALUE_TERMS)):
+        df = df.loc[df['isFraud'] != MISSING_VALUE_TERMS[i]]
+
+    # for missing feature values, replace by the average (for
+    # continuous features) or most common value (for categorical
+    # features) of the instances sharing the same target
+        
+    # step 1: determine most common value for all categorical features,
+    # per target
+    most_common_cat_features_pos = dict()
+    most_common_cat_features_neg = dict()
+    for categorical_feature in categorical_features:
+        most_common_cat_feature_pos = df.loc[df['isFraud'] == 1].get(categorical_feature).mode()
+        most_common_cat_feature_neg = df.loc[df['isFraud'] == 0].get(categorical_feature).mode()
+
+        most_common_cat_features_pos[categorical_feature] = most_common_cat_feature_pos
+        most_common_cat_features_neg[categorical_feature] = most_common_cat_feature_neg
+
+    
+
+    print(f'Number of rows in dataframe after handling missing values: {len(df)}')
+
+    return df
+
+
 
 def build_tree(df, split_metric='entropy'):
     """ Returns a decision tree object built upon the provided data.
@@ -18,22 +64,20 @@ def build_tree(df, split_metric='entropy'):
     """
 
     # check whether all targets are the same in the provided dataset
-    target_col_as_list = df['isFraud'].tolist()
-    if len(set(target_col_as_list)) == 1:
+    if len(pd.unique(df['isFraud'])) == 1:
         print('All the targets are the same')
-        return Leaf(target_col_as_list[0])
+        return Leaf(df['isFraud'][0])
 
     # assign a score to each possible data split
-    # QUESTION: is IG also included in the function calls below?
     feature_scores = dict()
     for feature in df.columns:
-        if feature != 'isFraud':
+        if feature != 'isFraud' and feature != 'transactionID':
             if split_metric == 'entropy':
-                feature_scores[feature] = get_entropy_score(df, feature)
+                feature_scores[feature] = get_info_gain(get_entropy_score, df, feature)
             elif split_metric == 'gini':
-                feature_scores[feature] = get_gini_score(df, feature)
+                feature_scores[feature] = get_info_gain(get_gini_score, df, feature)
             else:
-                feature_scores[feature] = get_misclassification_score(df, feature)
+                feature_scores[feature] = get_info_gain(get_misclassification_score, df, feature)
 
     # determine which feature has the max information gain
     max_score_feature = ''
@@ -48,7 +92,7 @@ def build_tree(df, split_metric='entropy'):
     degrees_of_freedom = (len(pd.unique(df[max_score_feature])) - 1) * (len(pd.unique(df['isFraud'])) - 1)
     chi_squared_table_value = chi2.ppf(0.05, degrees_of_freedom)
     if chi_squared_table_value > split_chi_squared_metric:
-        return Leaf(target_col_as_list[0])
+        return Leaf(df['isFraud'][0])
     
     # create branches from the node for all attributes of the selected feature
     node = Node(max_score_feature)
@@ -60,17 +104,11 @@ def build_tree(df, split_metric='entropy'):
     return node
 
 
-
-
-
-
-
-
-
 if __name__ == "__main__":
     """
     Main method for testing
     """
 
     df = pd.read_csv("../data/train.csv")
-    build_tree(df)
+    handle_missing_values(df)
+    #build_tree(df)
