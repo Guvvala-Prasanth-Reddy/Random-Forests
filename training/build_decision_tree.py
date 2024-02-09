@@ -30,9 +30,7 @@ def handle_missing_values(df):
     # for missing feature values, replace by the average (for
     # continuous features) or most common value (for categorical
     # features) of the instances sharing the same target
-        
     df.replace('NotFound', float('nan'), inplace=True)
-    # pprint.pprint(df)
 
     # check how many NaNs are present
     num_nan = df.isna().sum()
@@ -41,36 +39,21 @@ def handle_missing_values(df):
     feature_missing_value_replacement_dict = dict()
     for target_val in pd.unique(df['isFraud']):
         feature_missing_value_replacement_dict[target_val] = dict()
-
         for feature in df.columns:
-
             if feature in categorical_features:
                 feature_missing_value_replacement_dict[target_val][feature] = df.loc[df['isFraud'] == target_val].get(feature).mode()[0]
             else:
                 feature_missing_value_replacement_dict[target_val][feature] = df.loc[df['isFraud'] == target_val].get(feature).mean()
-    
-    # pprint.pprint(feature_missing_value_replacement_dict)   
 
     for target in pd.unique(df['isFraud']):
         df1 = df.loc[df['isFraud'] == target].fillna(value = feature_missing_value_replacement_dict[target]).copy()
-        
-                                    
-
-        # mask = df['isFraud'] == target
-
-        # for feature in df.columns:
-        #     df.loc[mask, feature] = df.loc[mask, feature].fillna(feature_missing_value_replacement_dict[target])
-
-        #df.loc[df['isFraud'] == target].fillna(value=feature_missing_value_replacement_dict[target], inplace=True)
         df.loc[df1.index] = df1
 
     # check how many NaNs are present
     num_nan = df.isna().sum()
     print(f'There are {num_nan} NaN values in the data frame after processing')
-    print(df)
 
     return df
-
 
 
 def build_tree(df, split_metric='entropy'):
