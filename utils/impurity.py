@@ -64,3 +64,38 @@ def get_misclassification_score(df : pd.DataFrame  , feature : str):
             feature : the feature i.e being considered for splitting criteria ( mainly target )
     """
     return 1 - max( get_list_of_probabilities_classification(df , feature))
+
+def get_chi_squared_value(df: pd.DataFrame, feature: str) -> float:
+    """ Computes the chi squared value of the provided dataset to be used in comparison
+        to a value from the chi squared table
+
+        Refer to class notes from 01/30 for presentation of this algorithm
+
+        Parameters:
+            df: A Pandas dataframe
+            feature: The column of the dataframe on which the split is being made
+
+        Returns:
+            float: The chi squared value of the dataset on the indicated feature split
+    """
+
+    chi_squared_value = 0
+    num_total_instances = len(df)
+    for feature_value in pd.unique(df.get(feature)):
+
+        # calculate the number of instances with specific feature value
+        num_feature_value_split = len(df.loc[df[feature] == feature_value])
+
+        for target in pd.unique(df.get('isFraud')):
+
+            # calculate the number of instances with specific feature value and
+            # specific target value
+            num_feature_value_split_with_target = len(df.loc[df['isFraud'] == target])
+
+            expectation = num_feature_value_split * num_feature_value_split_with_target / num_total_instances
+            observation = len(df.loc[df[feature] == feature_value &
+                                                   df['isFraud'] == target])
+
+            chi_squared_value += ((expectation - observation) ** 2) / observation
+
+    return chi_squared_value
