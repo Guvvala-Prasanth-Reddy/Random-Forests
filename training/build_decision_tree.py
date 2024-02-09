@@ -21,11 +21,10 @@ def handle_missing_values(df):
     """
 
     print(f'Number of rows in dataframe before handling missing values: {len(df)}')
-    pprint.pprint(df)
 
     # remove instances for which the target is not known
     for i in range(len(MISSING_VALUE_TERMS)):
-        df = df.loc[df['isFraud'] != MISSING_VALUE_TERMS[i]]
+        df = df.loc[df[target_column] != MISSING_VALUE_TERMS[i]]
 
     # for missing feature values, replace by the average (for
     # continuous features) or most common value (for categorical
@@ -33,25 +32,23 @@ def handle_missing_values(df):
     df.replace('NotFound', float('nan'), inplace=True)
 
     # check how many NaNs are present
-    num_nan = df.isna().sum()
-    print(f'There are {num_nan} NaN values in the data frame before processing')
+    print(f'NaN values per column befor handling missing values:{df.isna().sum()}')
 
     feature_missing_value_replacement_dict = dict()
-    for target_val in pd.unique(df['isFraud']):
+    for target_val in pd.unique(df[target_column]):
         feature_missing_value_replacement_dict[target_val] = dict()
         for feature in df.columns:
             if feature in categorical_features:
-                feature_missing_value_replacement_dict[target_val][feature] = df.loc[df['isFraud'] == target_val].get(feature).mode()[0]
+                feature_missing_value_replacement_dict[target_val][feature] = df.loc[df[target_column] == target_val].get(feature).mode()[0]
             else:
-                feature_missing_value_replacement_dict[target_val][feature] = df.loc[df['isFraud'] == target_val].get(feature).mean()
+                feature_missing_value_replacement_dict[target_val][feature] = df.loc[df[target_column] == target_val].get(feature).mean()
 
-    for target in pd.unique(df['isFraud']):
-        df1 = df.loc[df['isFraud'] == target].fillna(value = feature_missing_value_replacement_dict[target]).copy()
+    for target in pd.unique(df[target_column]):
+        df1 = df.loc[df[target_column] == target].fillna(value = feature_missing_value_replacement_dict[target]).copy()
         df.loc[df1.index] = df1
 
     # check how many NaNs are present
-    num_nan = df.isna().sum()
-    print(f'There are {num_nan} NaN values in the data frame after processing')
+    print(f'NaN values per column after handling missing values:{df.isna().sum()}')
 
     return df
 
@@ -73,14 +70,14 @@ def build_tree(df, split_metric='entropy'):
     """
 
     # check whether all targets are the same in the provided dataset
-    if len(pd.unique(df['isFraud'])) == 1:
+    if len(pd.unique(df[target_column])) == 1:
         print('All the targets are the same')
-        return Leaf(df['isFraud'][0])
+        return Leaf(df[target_column][0])
 
     # assign a score to each possible data split
     feature_scores = dict()
     for feature in df.columns:
-        if feature != 'isFraud' and feature != 'transactionID':
+        if feature != target_column and feature != 'transactionID':
             if split_metric == 'entropy':
                 feature_scores[feature] = get_info_gain(get_entropy_score, df, feature)
             elif split_metric == 'gini':
@@ -97,11 +94,11 @@ def build_tree(df, split_metric='entropy'):
             max_score_feature = feature
 
     # check if split is recommended by chi squared test
-    split_chi_squared_metric = get_chi_squared_metric(df, max_score_feature)
-    degrees_of_freedom = (len(pd.unique(df[max_score_feature])) - 1) * (len(pd.unique(df['isFraud'])) - 1)
-    chi_squared_table_value = chi2.ppf(0.05, degrees_of_freedom)
+    split_chi_squared_metric = get_chi_squared_value(df, max_score_feature)
+    degrees_of_freedom = (len(pd.unique(df[max_score_feature])) - 1) * (len(pd.unique(df[target_column])) - 1)
+    chi_squared_table_value = chi2.ppf(confidence_interval, degrees_of_freedom)
     if chi_squared_table_value > split_chi_squared_metric:
-        return Leaf(df['isFraud'][0])
+        return Leaf(df[target_column][0])
     
     # create branches from the node for all attributes of the selected feature
     node = Node(max_score_feature)
