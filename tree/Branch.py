@@ -1,4 +1,3 @@
-from tree.Node import Node
 from tree.Tree import Tree
 
 class Branch:
