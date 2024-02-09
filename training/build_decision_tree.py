@@ -20,6 +20,7 @@ def handle_missing_values(df):
     """
 
     print(f'Number of rows in dataframe before handling missing values: {len(df)}')
+    pprint.pprint(df)
 
     # remove instances for which the target is not known
     for i in range(len(MISSING_VALUE_TERMS)):
@@ -47,13 +48,12 @@ def handle_missing_values(df):
             else:
                 feature_missing_value_replacement_dict[target_val][feature] = df.loc[df['isFraud'] == target_val].get(feature).mean()
     
-    pprint.pprint(feature_missing_value_replacement_dict)   
-    
-    new_df = pd.DataFrame()
+    # pprint.pprint(feature_missing_value_replacement_dict)   
 
     for target in pd.unique(df['isFraud']):
-        for key in feature_missing_value_replacement_dict[target].keys():
-            df[df[key] == float('nan') & df['isFraud'] == target].fillna(feature_missing_value_replacement_dict[target][key] , inplace = True)
+        df1 = df.loc[df['isFraud'] == target].fillna(value = feature_missing_value_replacement_dict[target]).copy()
+        
+                                    
 
         # mask = df['isFraud'] == target
 
@@ -61,12 +61,12 @@ def handle_missing_values(df):
         #     df.loc[mask, feature] = df.loc[mask, feature].fillna(feature_missing_value_replacement_dict[target])
 
         #df.loc[df['isFraud'] == target].fillna(value=feature_missing_value_replacement_dict[target], inplace=True)
-
-    print(df)
+        df.loc[df1.index] = df1
 
     # check how many NaNs are present
     num_nan = df.isna().sum()
     print(f'There are {num_nan} NaN values in the data frame after processing')
+    print(df)
 
     return df
 
