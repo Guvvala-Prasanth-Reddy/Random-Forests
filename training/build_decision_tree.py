@@ -1,10 +1,11 @@
 import pandas as pd
-from scipy.stats import chi2
+from scipy.stats import chi2   
 from utils.consts import *
 from tree.Leaf import Leaf
 from tree.Branch import Branch
 from tree.Node import Node
 from utils.impurity import *
+import pprint
 
 MISSING_VALUE_TERMS = ['notFound', float('NaN'), 'NaN']
 
@@ -28,20 +29,44 @@ def handle_missing_values(df):
     # continuous features) or most common value (for categorical
     # features) of the instances sharing the same target
         
-    # step 1: determine most common value for all categorical features,
-    # per target
-    most_common_cat_features_pos = dict()
-    most_common_cat_features_neg = dict()
-    for categorical_feature in categorical_features:
-        most_common_cat_feature_pos = df.loc[df['isFraud'] == 1].get(categorical_feature).mode()
-        most_common_cat_feature_neg = df.loc[df['isFraud'] == 0].get(categorical_feature).mode()
+    df.replace('NotFound', float('nan'), inplace=True)
+    # pprint.pprint(df)
 
-        most_common_cat_features_pos[categorical_feature] = most_common_cat_feature_pos
-        most_common_cat_features_neg[categorical_feature] = most_common_cat_feature_neg
+    # check how many NaNs are present
+    num_nan = df.isna().sum()
+    print(f'There are {num_nan} NaN values in the data frame before processing')
 
+    feature_missing_value_replacement_dict = dict()
+    for target_val in pd.unique(df['isFraud']):
+        feature_missing_value_replacement_dict[target_val] = dict()
+
+        for feature in df.columns:
+
+            if feature in categorical_features:
+                feature_missing_value_replacement_dict[target_val][feature] = df.loc[df['isFraud'] == target_val].get(feature).mode()[0]
+            else:
+                feature_missing_value_replacement_dict[target_val][feature] = df.loc[df['isFraud'] == target_val].get(feature).mean()
     
+    pprint.pprint(feature_missing_value_replacement_dict)   
+    
+    new_df = pd.DataFrame()
 
-    print(f'Number of rows in dataframe after handling missing values: {len(df)}')
+    for target in pd.unique(df['isFraud']):
+        for key in feature_missing_value_replacement_dict[target].keys():
+            df[df[key] == float('nan') & df['isFraud'] == target].fillna(feature_missing_value_replacement_dict[target][key] , inplace = True)
+
+        # mask = df['isFraud'] == target
+
+        # for feature in df.columns:
+        #     df.loc[mask, feature] = df.loc[mask, feature].fillna(feature_missing_value_replacement_dict[target])
+
+        #df.loc[df['isFraud'] == target].fillna(value=feature_missing_value_replacement_dict[target], inplace=True)
+
+    print(df)
+
+    # check how many NaNs are present
+    num_nan = df.isna().sum()
+    print(f'There are {num_nan} NaN values in the data frame after processing')
 
     return df
 
@@ -109,6 +134,6 @@ if __name__ == "__main__":
     Main method for testing
     """
 
-    df = pd.read_csv("../data/train.csv")
+    df = pd.read_csv("data/train.csv")
     handle_missing_values(df)
     #build_tree(df)
