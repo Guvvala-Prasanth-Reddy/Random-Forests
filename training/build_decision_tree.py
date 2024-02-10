@@ -130,7 +130,7 @@ def build_tree(df, split_metric='entropy'):
             node.add_branch(branch)
     else:
         less_than_branch = Branch('<' + str(continuous_cutoff_value),
-                                  build_tree(df[max_score_feature] < continuous_cutoff_value, split_metric))
+                                  build_tree(df.loc[df[max_score_feature] < continuous_cutoff_value], split_metric))
         greater_than_branch = Branch('>=' + str(continuous_cutoff_value),
                                      build_tree(df.loc[df[max_score_feature] >= continuous_cutoff_value], split_metric))
         node.add_branch(less_than_branch)
