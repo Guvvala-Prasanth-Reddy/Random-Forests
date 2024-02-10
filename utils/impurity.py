@@ -3,7 +3,7 @@ import numpy as np
 from utils.consts import *
 
 
-def get_info_gain_categorical(impurity_function: function , df: pd.DataFrame , feature:str) -> float:
+def get_info_gain_categorical(impurity_function , df: pd.DataFrame , feature:str) -> float:
     """ Returns the information gain of the provided dataset considering a split on the provided
         categorical feature.
 
@@ -19,7 +19,7 @@ def get_info_gain_categorical(impurity_function: function , df: pd.DataFrame , f
     return info_gain
 
 
-def get_info_gain_continuous(impurity_function: function , df: pd.DataFrame , feature:str) -> float:
+def get_info_gain_continuous(impurity_function , df: pd.DataFrame , feature:str) -> float:
     """ Returns the information gain of the provided dataset considering a split on the provided
         continuous feature.
 
