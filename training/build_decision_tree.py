@@ -5,10 +5,9 @@ from tree.Leaf import Leaf
 from tree.Branch import Branch
 from tree.Node import Node
 from utils.impurity import *
-import pprint
+import time
 
 MISSING_VALUE_TERMS = ['notFound', float('NaN'), 'NaN']
-# added a comment 1
 
 def handle_missing_values(df):
     """ Cleans data frame of missing values.
@@ -20,8 +19,6 @@ def handle_missing_values(df):
         The provided dataframe without missing values
     """
 
-    print(f'Number of rows in dataframe before handling missing values: {len(df)}')
-
     # remove instances for which the target is not known
     for i in range(len(MISSING_VALUE_TERMS)):
         df = df.loc[df[target_column] != MISSING_VALUE_TERMS[i]]
@@ -32,7 +29,7 @@ def handle_missing_values(df):
     df.replace('NotFound', float('nan'), inplace=True)
 
     # check how many NaNs are present
-    print(f'NaN values per column befor handling missing values:{df.isna().sum()}')
+    #print(f'NaN values per column befor handling missing values:{df.isna().sum()}')
 
     feature_missing_value_replacement_dict = dict()
     for target_val in pd.unique(df[target_column]):
@@ -48,7 +45,7 @@ def handle_missing_values(df):
         df.loc[df1.index] = df1
 
     # check how many NaNs are present
-    print(f'NaN values per column after handling missing values:{df.isna().sum()}')
+    #print(f'NaN values per column after handling missing values:{df.isna().sum()}')
 
     return df
 
@@ -71,41 +68,73 @@ def build_tree(df, split_metric='entropy'):
 
     # check whether all targets are the same in the provided dataset
     if len(pd.unique(df[target_column])) == 1:
-        print('All the targets are the same')
         return Leaf(df[target_column][0])
 
-    # assign a score to each possible data split
-    feature_scores = dict()
-    for feature in df.columns:
-        if feature != target_column and feature != 'transactionID':
-            if split_metric == 'entropy':
-                feature_scores[feature] = get_info_gain(get_entropy_score, df, feature)
-            elif split_metric == 'gini':
-                feature_scores[feature] = get_info_gain(get_gini_score, df, feature)
-            else:
-                feature_scores[feature] = get_info_gain(get_misclassification_score, df, feature)
-
-    # determine which feature has the max information gain
+    # record the categorical feature with the highest information gain, as well as its
+    # corresponding information gain value
     max_score_feature = ''
     max_feature_score = float('-inf')
-    for feature in feature_scores.keys:
-        if feature_scores[feature] > max_feature_score:
-            max_feature_score = feature_scores[feature]
-            max_score_feature = feature
+    for categorical_feature in categorical_features:
+        feature_info_gain = 0
+        if split_metric == 'entropy':
+            feature_info_gain = get_info_gain_categorical(get_entropy_score, df, categorical_feature)
+        elif split_metric == 'gini':
+            feature_info_gain = get_info_gain_categorical(get_gini_score, df, categorical_feature)
+        else:
+            feature_info_gain = get_info_gain_categorical(get_misclassification_score, df, categorical_feature)
 
+        if feature_info_gain > max_feature_score:
+            max_feature_score = feature_info_gain
+            max_score_feature = categorical_feature
+
+    # if any continuous features have a higher information gain than the categorical feature
+    # with the highest information gain, record this feature (and its split cutoff) instead
+    continuous_cutoff_value = 0
+    for continuous_feature in df.columns:
+        if continuous_feature not in categorical_features and (
+            continuous_feature != target_column and continuous_feature != 'TransactionID'
+        ):
+            feature_info_gain = 0
+            feature_cutoff_value = 0
+            if split_metric == 'entropy':
+                (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous(get_entropy_score, df, continuous_feature)
+            elif split_metric == 'gini':
+                (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous(get_gini_score, df, continuous_feature)
+            else:
+                (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous(get_misclassification_score, df, continuous_feature)
+
+            if feature_info_gain > max_feature_score:
+                max_feature_score = feature_info_gain
+                max_score_feature = categorical_feature
+                continuous_cutoff_value = feature_cutoff_value
+    
     # check if split is recommended by chi squared test
-    split_chi_squared_metric = get_chi_squared_value(df, max_score_feature)
-    degrees_of_freedom = (len(pd.unique(df[max_score_feature])) - 1) * (len(pd.unique(df[target_column])) - 1)
+    split_chi_squared_value = 0
+    degrees_of_freedom = 0
+    if max_score_feature in categorical_features:
+        split_chi_squared_value = get_chi_squared_value_categorical(df, max_score_feature)
+        degrees_of_freedom = (len(pd.unique(df[max_score_feature])) - 1) * (len(pd.unique(df[target_column])) - 1)
+    else:
+        split_chi_squared_value = get_chi_squared_value_continuous(df, max_score_feature, continuous_cutoff_value)
+        degrees_of_freedom = len(pd.unique(df[target_column])) - 1
     chi_squared_table_value = chi2.ppf(confidence_interval, degrees_of_freedom)
-    if chi_squared_table_value > split_chi_squared_metric:
-        return Leaf(df[target_column][0])
+    if chi_squared_table_value > split_chi_squared_value:
+        return Leaf(df[target_column].mode())
     
     # create branches from the node for all attributes of the selected feature
     node = Node(max_score_feature)
-    for feature_value in pd.unique(df[max_score_feature]):
-        branch = Branch(feature_value,
-                        build_tree(df[max_score_feature] == feature_value, split_metric))
-        node.add_branch(branch)
+    if max_score_feature in categorical_features:
+        for feature_value in pd.unique(df[max_score_feature]):
+            branch = Branch(feature_value,
+                            build_tree(df.loc[df[max_score_feature] == feature_value], split_metric))
+            node.add_branch(branch)
+    else:
+        less_than_branch = Branch('<' + str(continuous_cutoff_value),
+                                  build_tree(df[max_score_feature] < continuous_cutoff_value, split_metric))
+        greater_than_branch = Branch('>=' + str(continuous_cutoff_value),
+                                     build_tree(df.loc[df[max_score_feature] >= continuous_cutoff_value], split_metric))
+        node.add_branch(less_than_branch)
+        node.add_branch(greater_than_branch)
     
     return node
 
@@ -115,6 +144,15 @@ if __name__ == "__main__":
     Main method for testing
     """
 
+    start_time = time.time()
+
     df = pd.read_csv("data/train.csv")
+    print(f'Time to read file: {time.time() - start_time} seconds')
+    start_time = time.time()
+
     handle_missing_values(df)
-    #build_tree(df)
+    print(f'Time to handle missing values: {time.time() - start_time} seconds')
+    start_time = time.time()
+
+    build_tree(df)
+    print(f'Time to build tree: {time.time() - start_time} seconds')
