@@ -6,6 +6,8 @@ from tree.Branch import Branch
 from tree.Node import Node
 from utils.impurity import *
 import time
+import sys
+sys.setrecursionlimit( 10**6)
 
 MISSING_VALUE_TERMS = ['notFound', float('NaN'), 'NaN']
 
@@ -68,7 +70,7 @@ def build_tree(df, split_metric='entropy'):
 
     # check whether all targets are the same in the provided dataset
     if len(pd.unique(df[target_column])) == 1:
-        return Leaf(df[target_column][0])
+        return Leaf(df[target_column].iloc[0])
 
     # record the categorical feature with the highest information gain, as well as its
     # corresponding information gain value
@@ -150,9 +152,11 @@ if __name__ == "__main__":
     print(f'Time to read file: {time.time() - start_time} seconds')
     start_time = time.time()
 
-    handle_missing_values(df)
+    df = handle_missing_values(df)
     print(f'Time to handle missing values: {time.time() - start_time} seconds')
+    print(df)
     start_time = time.time()
-
-    build_tree(df)
+    df1 = df.sample(frac = .01)
+    print(len(df1))
+    build_tree(df1)
     print(f'Time to build tree: {time.time() - start_time} seconds')

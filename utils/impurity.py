@@ -38,8 +38,8 @@ def get_info_gain_continuous(impurity_function , df: pd.DataFrame , feature:str)
     feature_max_info_gain = 0
     feature_max_info_gain_split = 0
     for row_idx in range(len(df) - 1):
-        if df.get(target_column)[row_idx] != df.get(target_column)[row_idx + 1]:
-            split_value = (df.get(feature)[row_idx] + df.get(feature)[row_idx + 1]) / 2
+        if list(df.get(target_column))[row_idx] != list(df.get(target_column))[row_idx + 1]:
+            split_value = (list(df.get(feature))[row_idx] + list(df.get(feature))[row_idx + 1]) / 2
 
             info_gain = impurity_function(df)
             info_gain -= len(df.loc[df[feature] < split_value]) / len(df) * impurity_function(df.loc[df[feature] < split_value])
@@ -127,8 +127,11 @@ def get_chi_squared_value_categorical(df: pd.DataFrame, feature: str) -> float:
             num_feature_value_split_with_target = len(df.loc[df[target_column] == target])
 
             expectation = num_feature_value_split * num_feature_value_split_with_target / num_total_instances
-            observation = len(df.loc[df[feature] == feature_value &
-                                                   df[target_column] == target])
+            if( len( np.where((df[feature] == feature_value ) &  (df[target_column] == target)) ) > 0 ):
+                observation = len(np.where( (df[feature] == feature_value) &
+                                    (df[target_column] == target) ))
+            else:
+                observation = 0 
 
             chi_squared_value += ((expectation - observation) ** 2) / observation
 

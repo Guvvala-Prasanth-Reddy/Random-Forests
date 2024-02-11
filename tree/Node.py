@@ -4,7 +4,7 @@ class Node(Tree):
     def __init__(self , feature):
         self.feature = feature
         self.branches = []
-    def add_brach(self,branch:Branch):
+    def add_branch(self,branch:Branch):
         self.branches.append(branch)
      
 
