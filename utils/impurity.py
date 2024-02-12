@@ -34,7 +34,7 @@ def get_info_gain_continuous(impurity_function , df: pd.DataFrame , feature:str)
             gain respectively
     """
 
-    df.sort_values(feature, inplace=True)
+    df.sort_values(by=feature, inplace=True)
     feature_max_info_gain = 0
     feature_max_info_gain_split = 0
     for row_idx in range(len(df) - 1):
@@ -133,7 +133,7 @@ def get_chi_squared_value_categorical(df: pd.DataFrame, feature: str) -> float:
             else:
                 observation = 0 
 
-            chi_squared_value += ((expectation - observation) ** 2) / observation
+            chi_squared_value += ((observation - expectation) ** 2) / expectation
 
     return chi_squared_value
 
@@ -158,13 +158,13 @@ def get_chi_squared_value_continuous(df: pd.DataFrame, feature: str, cutoff_valu
     for target in pd.unique(df.get(target_column)):
 
         expectation = len(df.loc[df[feature] < cutoff_value]) * len(df.loc[df[target_column] == target]) / num_total_instances
-        observation = len(df.loc[df[feature] < cutoff_value & df[target_column] == target])
+        observation = len(df.loc[(df[feature] < cutoff_value) & (df[target_column] == target)])
 
-        chi_squared_value += ((expectation - observation) ** 2) / observation
+        chi_squared_value += ((observation - expectation) ** 2) / expectation
 
         expectation = len(df.loc[df[feature] >= cutoff_value]) * len(df.loc[df[target_column] == target]) / num_total_instances
-        observation = len(df.loc[df[feature] >= cutoff_value & df[target_column] == target])
+        observation = len(df.loc[(df[feature] >= cutoff_value) & (df[target_column] == target)])
 
-        chi_squared_value += ((expectation - observation) ** 2) / observation
+        chi_squared_value += ((observation - expectation) ** 2) / expectation
 
     return chi_squared_value

@@ -72,6 +72,8 @@ def build_tree(df, split_metric='entropy'):
     if len(pd.unique(df[target_column])) == 1:
         return Leaf(df[target_column].iloc[0])
 
+    ig_dict = dict()
+
     # record the categorical feature with the highest information gain, as well as its
     # corresponding information gain value
     max_score_feature = ''
@@ -84,6 +86,8 @@ def build_tree(df, split_metric='entropy'):
             feature_info_gain = get_info_gain_categorical(get_gini_score, df, categorical_feature)
         else:
             feature_info_gain = get_info_gain_categorical(get_misclassification_score, df, categorical_feature)
+
+        ig_dict[categorical_feature] = feature_info_gain
 
         if feature_info_gain > max_feature_score:
             max_feature_score = feature_info_gain
@@ -105,9 +109,12 @@ def build_tree(df, split_metric='entropy'):
             else:
                 (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous(get_misclassification_score, df, continuous_feature)
 
+            ig_dict[continuous_feature] = feature_info_gain
+
+
             if feature_info_gain > max_feature_score:
                 max_feature_score = feature_info_gain
-                max_score_feature = categorical_feature
+                max_score_feature = continuous_feature
                 continuous_cutoff_value = feature_cutoff_value
     
     # check if split is recommended by chi squared test
@@ -120,17 +127,25 @@ def build_tree(df, split_metric='entropy'):
         split_chi_squared_value = get_chi_squared_value_continuous(df, max_score_feature, continuous_cutoff_value)
         degrees_of_freedom = len(pd.unique(df[target_column])) - 1
     chi_squared_table_value = chi2.ppf(confidence_interval, degrees_of_freedom)
-    if chi_squared_table_value > split_chi_squared_value:
+    # print(f'Table value with {degrees_of_freedom} degrees of free and {confidence_interval} = {chi_squared_table_value}')
+    # print(f'  len(pd.unique(df[max_score_feature])) - 1 = {len(pd.unique(df[max_score_feature])) - 1}, len(pd.unique(df[target_column])) - 1 = {len(pd.unique(df[target_column])) - 1}, feature = {max_score_feature}')
+    # print(f'Table value: {chi_squared_table_value}, computed value: {split_chi_squared_value}')
+    # print(ig_dict)
+    # print(f'  The dataset {df}')
+    # print(f'chi table value {chi_squared_table_value} == np.nan: {chi_squared_table_value == np.nan}, type(chi_square_table_value) = {type(chi_squared_table_value)}')
+    if chi_squared_table_value > split_chi_squared_value or chi_squared_table_value == float('nan'):
         return Leaf(df[target_column].mode())
     
     # create branches from the node for all attributes of the selected feature
     node = Node(max_score_feature)
     if max_score_feature in categorical_features:
         for feature_value in pd.unique(df[max_score_feature]):
+            #print(f'For categorical fearure {max_score_feature}, shrinking dataset from {len(df)} to {len(df.loc[df[max_score_feature] == feature_value])}')
             branch = Branch(feature_value,
                             build_tree(df.loc[df[max_score_feature] == feature_value], split_metric))
             node.add_branch(branch)
     else:
+        #print(f'For continuous fearure {max_score_feature}, shrinking dataset from {len(df)} to {len(df.loc[df[max_score_feature] < continuous_cutoff_value])} and {len(df.loc[df[max_score_feature] >= continuous_cutoff_value])}')
         less_than_branch = Branch('<' + str(continuous_cutoff_value),
                                   build_tree(df.loc[df[max_score_feature] < continuous_cutoff_value], split_metric))
         greater_than_branch = Branch('>=' + str(continuous_cutoff_value),
