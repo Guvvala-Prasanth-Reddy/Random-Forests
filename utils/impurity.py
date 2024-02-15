@@ -34,24 +34,44 @@ def get_info_gain_continuous(impurity_function , df: pd.DataFrame , feature:str)
             gain respectively
     """
 
-    df.sort_values(by=feature, inplace=True)
+
+    # performing inplace sort causes pandas to show a warning during runtime
+    df = df.sort_values(by=feature, inplace=False)
+
     feature_max_info_gain = 0
     feature_max_info_gain_split = 0
-    for row_idx in range(len(df) - 1):
-        if list(df.get(target_column))[row_idx] != list(df.get(target_column))[row_idx + 1]:
-            split_value = (list(df.get(feature))[row_idx] + list(df.get(feature))[row_idx + 1]) / 2
 
-            info_gain = impurity_function(df)
-            info_gain -= len(df.loc[df[feature] < split_value]) / len(df) * impurity_function(df.loc[df[feature] < split_value])
-            info_gain -= len(df.loc[df[feature] >= split_value]) / len(df) * impurity_function(df.loc[df[feature] >= split_value])
+    # caching these values outside of the loop so they only need to be
+    # computed oncec
+    df_impurity = impurity_function(df)
+    len_df = len(df)
 
-            if info_gain > feature_max_info_gain:
+    for row_idx in range(len(df.index) - 1):
+
+        # df is indexed by TransactionID, not from 0, 1, 2, ...
+        # so in order to traverse the rows sequentially by index, we
+        # must sequentially get the values of df.index
+        nth_row_index = df.index[row_idx]
+        n_plus_oneth_row_index = df.index[row_idx + 1]
+
+        # arranging if/else this way should increase performance from branch prediction
+        if df.get(target_column)[nth_row_index] == df.get(target_column)[n_plus_oneth_row_index]:
+            continue
+        else:
+            split_value = (df.get(feature)[nth_row_index] + df.get(feature)[n_plus_oneth_row_index]) / 2
+
+            info_gain = df_impurity
+            info_gain -= len(df.loc[df[feature] < split_value]) / len_df * impurity_function(df.loc[df[feature] < split_value])
+            info_gain -= len(df.loc[df[feature] >= split_value]) / len_df * impurity_function(df.loc[df[feature] >= split_value])
+
+            # arranging if/else this way should increase performance from branch prediction
+            if info_gain <= feature_max_info_gain:
+                continue
+            else:
                 feature_max_info_gain = info_gain
                 feature_max_info_gain_split = split_value
                 
     return (feature_max_info_gain, feature_max_info_gain_split)
-                
-
 
 
 def get_list_of_probabilities_classification(df: pd.DataFrame) -> np.array:
@@ -78,7 +98,11 @@ def get_entropy_score(df: pd.DataFrame) -> float:
         Parameters:
             df : The data before splitting on feature
     """
-    return -1 * np.sum(np.multiply(get_list_of_probabilities_classification(df), np.log2(get_list_of_probabilities_classification(df))))
+
+    # split this into two lines so that the function call to get_list_of_probabilities_classification()
+    # only occurs once (small optimization)
+    classification_prob_list = get_list_of_probabilities_classification(df)
+    return -1 * np.sum(np.multiply(classification_prob_list, np.log2(classification_prob_list)))
 
 
 def get_gini_score(df: pd.DataFrame) -> float:
@@ -127,18 +151,14 @@ def get_chi_squared_value_categorical(df: pd.DataFrame, feature: str) -> float:
             num_feature_value_split_with_target = len(df.loc[df[target_column] == target])
 
             expectation = num_feature_value_split * num_feature_value_split_with_target / num_total_instances
-            if( len( np.where((df[feature] == feature_value ) &  (df[target_column] == target)) ) > 0 ):
-                observation = len(np.where( (df[feature] == feature_value) &
-                                    (df[target_column] == target) ))
-            else:
-                observation = 0 
+            observation = len(df.loc[(df[feature] == feature_value) & (df[target_column] == target)])
 
             chi_squared_value += ((observation - expectation) ** 2) / expectation
 
     return chi_squared_value
 
 def get_chi_squared_value_continuous(df: pd.DataFrame, feature: str, cutoff_value: float) -> float:
-    """ Computes the chi squared value of the provided dataset to be used in comparison
+    """ Computes the chi squared value of the provided dataset to be used in comparisonß
         to a value from the chi squared table
 
         Refer to class notes from 01/30 for presentation of this algorithm
