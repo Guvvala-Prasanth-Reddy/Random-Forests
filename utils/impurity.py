@@ -175,6 +175,7 @@ def get_chi_squared_value_continuous(df: pd.DataFrame, feature: str, cutoff_valu
 
     chi_squared_value = 0
     num_total_instances = len(df)
+
     for target in pd.unique(df.get(target_column)):
 
         expectation = len(df.loc[df[feature] < cutoff_value]) * len(df.loc[df[target_column] == target]) / num_total_instances
