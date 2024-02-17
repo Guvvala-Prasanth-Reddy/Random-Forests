@@ -73,8 +73,8 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
     # corresponding information gain value
     max_score_feature = ''
     max_feature_score = float('-inf')
-    for categorical_feature in categorical_features:
-        if not (categorical_feature in seen_features):
+    for categorical_feature in df.columns:
+        if not (categorical_feature in seen_features) and (categorical_feature in categorical_features):
             feature_info_gain = 0
             if split_metric == 'entropy':
                 feature_info_gain = get_info_gain_categorical(get_entropy_score, df, categorical_feature)
