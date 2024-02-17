@@ -1,4 +1,7 @@
 import pandas as pd
+from tree.Tree import Tree
+from utils.consts import target_column
+from classification.classify import tree_classify
 
 def get_balanced_error(true_targets: pd.DataFrame, pred_targets: pd.DataFrame) -> float:
     """ Returns the balanced error 
@@ -30,7 +33,29 @@ def get_balanced_error(true_targets: pd.DataFrame, pred_targets: pd.DataFrame) -
 
     false_negative_rate = false_negative_count / len(true_targets.loc[true_targets[true_target_name] == 1])
     false_positive_rate = false_positive_count / len(true_targets.loc[true_targets[true_target_name] == 0])
-    print(f'  fpr: {false_positive_rate}')
-    print(f'  fnr: {false_negative_rate}')
 
     return 0.5 * (false_negative_rate + false_positive_rate)
+
+
+def get_tree_acc(tree: Tree, df: pd.DataFrame):
+    """
+
+        Parameters:
+            tree: a tree object
+            df: a dataframe with included correct target values
+
+        Returns:
+            The balanced accuracy of the tree on the provided data
+    """
+
+    true_targets = df.get(target_column)
+    predicted_targets = []
+
+    df.reset_index()
+
+    for row_idx in range(len(df.index) - 1):
+        predicted_target = tree_classify(df[row_idx], tree)
+        predicted_targets.append(predicted_target)
+
+    balanced_err = get_balanced_error(true_targets, predicted_targets)
+    return 1 - balanced_err
