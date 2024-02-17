@@ -1,5 +1,11 @@
+from utils.consts import categorical_features
+from tree.Leaf import Leaf
+from tree.Tree import Tree
+import numpy as np
+import statistics as st
+import pandas as pd
 
-def tree_classify(df, tree):
+def tree_classify(df: pd.DataFrame, tree: Tree):
     """ Returns the decision tree classification of the given instance
 
         Parameters:
@@ -13,11 +19,26 @@ def tree_classify(df, tree):
         return tree.target
 
     # case 2: tree is a node
-    for branch in tree.branches:
-        if df[tree.feature] == branch.feature_value:
-            return tree_classify(df, branch.tree)
+    if tree.feature in categorical_features:
+        for branch in tree.branches:
+            if df[tree.feature] == branch.feature_value:
+                return tree_classify(df, branch.tree)
+    else:
+        split_cutoff_value = tree.branches[0].feature_value.replace('<', '')
+        feature_value = float(df[tree.feature])
+
+        if feature_value < split_cutoff_value:
+            return tree_classify(df, tree.branches[0].tree)
+        else:
+            return tree_classify(df, tree.branches[1].tree)
         
 
 def forest_classify(df, forest):
-    pass
+    
+    classification_results = []
+    for tree in forest.trees:
+        classification_result = tree_classify(df, tree)
+        classification_results.append(classification_result)
+
+    return st.mode(np.array(classification_results))
 
