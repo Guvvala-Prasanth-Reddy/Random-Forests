@@ -1,7 +1,11 @@
 from utils.consts import categorical_features
 from tree.Leaf import Leaf
+from tree.Tree import Tree
+import numpy as np
+import statistics as st
+import pandas as pd
 
-def tree_classify(df, tree):
+def tree_classify(df: pd.DataFrame, tree: Tree):
     """ Returns the decision tree classification of the given instance
 
         Parameters:
@@ -30,5 +34,11 @@ def tree_classify(df, tree):
         
 
 def forest_classify(df, forest):
-    pass
+    
+    classification_results = []
+    for tree in forest.trees:
+        classification_result = tree_classify(df, tree)
+        classification_results.append(classification_result)
+
+    return st.mode(np.array(classification_results))
 
