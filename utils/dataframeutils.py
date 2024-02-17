@@ -4,6 +4,7 @@ from sklearn.model_selection import KFold
 from utils.consts import *
 import random
 import pandas as pd
+import numpy as np
 
 
 def train_test_data_split(df : pd.DataFrame , mode : str = train_test , column_list : list[str] = []  , number_of_folds : int = 10 ) -> pd.DataFrame :
@@ -26,13 +27,13 @@ def train_test_data_split(df : pd.DataFrame , mode : str = train_test , column_l
     if( column_list != []):
         df = df[column_list] 
     if( mode == k_fold):
-        return KFold(n_splits= number_of_folds ).split( x = df.drop(columns=[target_column]) , y = df[target_column] )
+        return KFold(n_splits= number_of_folds ).split( X = df.drop(columns=[target_column]) , y = df[target_column] )
         #Done : return number_of_splits:k  with given column_list
     
     if( mode == stratified_k_fold):
 
         #Done: return stratified K splits with given columns 
-        return StratifiedKFold( n_splits=number_of_folds , shuffle=False).split( x = df.drop(columns=[target_column]) , y = df[target_column] )
+        return StratifiedKFold( n_splits=number_of_folds , shuffle=False).split( X = df.drop(columns=[target_column]) , y = df[target_column] )
     
     if( mode == train_test):
         #Done : return train_test_data in given split percentages 
@@ -72,8 +73,8 @@ def random_sample_rows(df : pd.DataFrame , sample_size : int ):
 def split_data(df : pd.DataFrame , column_sample_size , row_sample_size ):
 
     columns = df.columns
-    columns.remove( "TransactionID")
-    columns.remove( "isFraud" )
+    columns = columns.drop( labels=["TransactionID", "isFraud"] )
+    columns = list(columns)
     columns = random.sample( columns , k = int(column_sample_size*len(df.columns)))
     columns.append("TransactionID")
     columns.append( "isFraud" )
