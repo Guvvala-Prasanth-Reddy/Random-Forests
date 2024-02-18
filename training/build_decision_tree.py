@@ -7,8 +7,8 @@ from tree.Node import Node
 from utils.impurity import *
 import time
 import sys
+import statistics as st
 import pickle
-sys.setrecursionlimit( 10**6)
 
 MISSING_VALUE_TERMS = ['notFound', float('NaN'), 'NaN']
 
@@ -67,7 +67,9 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
 
     # check whether all targets are the same in the provided dataset
     if len(pd.unique(df[target_column])) == 1:
-        return Leaf(df[target_column].iloc[0])
+        # print(len(pd.unique(df[target_column])) == 1)
+        # print(df[target_column])
+        return Leaf(list(df[target_column])[0])
 
     # record the categorical feature with the highest information gain, as well as its
     # corresponding information gain value
@@ -111,7 +113,10 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
     seen_features.add(max_score_feature)
 
     if max_feature_score == 0 or max_score_feature == '':
-        return Leaf(df[target_column].mode())
+        # print("df check" + df[target_column].mode())
+        if( st.mode(np.array(df[target_column])) is None):
+            print("None")
+        return Leaf(st.mode(np.array(df[target_column])))
     
     # check if split is recommended by chi squared test
     split_chi_squared_value = 0
@@ -125,7 +130,9 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
     chi_squared_table_value = chi2.ppf(confidence_interval, degrees_of_freedom)
 
     if chi_squared_table_value > split_chi_squared_value:
-        return Leaf(df[target_column].mode())
+        if( st.mode(np.array(df[target_column])) is None):
+            print("None")
+        return Leaf(st.mode(np.array(df[target_column])))
     
     # create branches from the node for all attributes of the selected feature
     node = Node(max_score_feature)
@@ -169,7 +176,7 @@ if __name__ == "__main__":
     print(f'Time to handle missing values: {time.time() - start_time} seconds')
     print(df)
     start_time = time.time()
-    df1 = df.sample(frac = 0.1)
+    df1 = df.sample(frac = 0.01)
     print(len(df1))
     tree = build_tree(df1)
     print(f'Time to build tree: {time.time() - start_time} seconds')

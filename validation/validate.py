@@ -2,6 +2,7 @@ import pandas as pd
 from tree.Tree import Tree
 from utils.consts import target_column
 from classification.classify import tree_classify
+import sys
 
 def get_balanced_error(true_targets: pd.DataFrame, pred_targets: pd.DataFrame) -> float:
     """ Returns the balanced error 
@@ -16,16 +17,21 @@ def get_balanced_error(true_targets: pd.DataFrame, pred_targets: pd.DataFrame) -
             the balanced error calculated from the provided predicted values and
             true values
     """
+    print(true_targets[true_targets.isna().any(axis=1)])
+    print(pred_targets[pred_targets.isna().any(axis=1)])
     
-    true_target_name = true_targets.columns[0]
-    pred_target_name = pred_targets.columns[0]
+    true_target_name = list(true_targets.columns)[0]
+    # pred_target_name = list(pred_targets.columns)[0]
+    # print(true_targets , pred_targets)
 
     false_negative_count = 0
     false_positive_count = 0
+    print(true_targets.index , pred_targets.index)
     for i in range(len(true_targets)):
-        true_target_val = true_targets[true_target_name][i]
-        pred_target_val = pred_targets[pred_target_name][i]
-
+        # print(i , type(i))
+        true_target_val = true_targets.loc[i][target_column]
+        pred_target_val = pred_targets.loc[i][target_column]
+        print(true_target_val , pred_target_val)
         if true_target_val == 1 and pred_target_val != 1:
             false_negative_count += 1
         if true_target_val == 0 and pred_target_val != 0:
@@ -48,14 +54,20 @@ def get_tree_acc(tree: Tree, df: pd.DataFrame):
             The balanced accuracy of the tree on the provided data
     """
 
-    true_targets = df.get(target_column)
+    true_targets = pd.DataFrame(data = list(df[target_column]) , columns = [target_column])
     predicted_targets = []
+    # print(true_targets)
+    # print(predicted_targets)
 
-    df.reset_index()
+    # df.reset_index()
 
-    for row_idx in range(len(df.index) - 1):
-        predicted_target = tree_classify(df[row_idx], tree)
-        predicted_targets.append(predicted_target)
-
+    for row_idx in df.index.values:
+        # print(row_idx)
+        predicted_target = tree_classify(df.loc[[row_idx]], tree)
+        # print( df.loc[[row_idx]])
+        # print(predicted_target)
+        predicted_targets.append( predicted_target )
+    print(predicted_targets)
+    predicted_targets = pd.DataFrame( data = predicted_targets  , columns = [target_column])
     balanced_err = get_balanced_error(true_targets, predicted_targets)
     return 1 - balanced_err
