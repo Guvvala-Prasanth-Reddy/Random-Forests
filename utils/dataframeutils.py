@@ -70,7 +70,7 @@ def random_sample_rows(df : pd.DataFrame , sample_size : int ):
 #     df = pd.read_csv("data/train.csv")
 #     X_train , X_test , y_train, y_test = train_test_data_split(df , mode = train_test )
 #     print( X_train , y_train)
-def split_data(df : pd.DataFrame , column_sample_size , row_sample_size ):
+def split_data(df : pd.DataFrame , column_sample_size , row_sample_size, replace):
 
     columns = df.columns
     columns = columns.drop( labels=["TransactionID", "isFraud"] )
@@ -79,5 +79,9 @@ def split_data(df : pd.DataFrame , column_sample_size , row_sample_size ):
     columns.append("TransactionID")
     columns.append( "isFraud" )
     df = df[columns]
+
+    # do row bagging here
+    df = df.sample(frac=row_sample_size, replace=replace)
+
     X_train , X_test , y_train, y_test = train_test_data_split(df , mode = train_test )
     return (pd.concat([X_train , y_train] , axis = 1) , pd.concat([X_test ,y_test] , axis=1) )
