@@ -65,10 +65,10 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
 
     """
 
+    print(f'  Entering build_tree() with a df of size {len(df)}')
+
     # check whether all targets are the same in the provided dataset
     if len(pd.unique(df[target_column])) == 1:
-        # print(len(pd.unique(df[target_column])) == 1)
-        # print(df[target_column])
         return Leaf(list(df[target_column])[0])
 
     # record the categorical feature with the highest information gain, as well as its
@@ -76,7 +76,7 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
     max_score_feature = ''
     max_feature_score = float('-inf')
     for categorical_feature in df.columns:
-        if not (categorical_feature in seen_features) and (categorical_feature in categorical_features):
+        if (not (categorical_feature in seen_features)) and (categorical_feature in categorical_features):
             feature_info_gain = 0
             if split_metric == 'entropy':
                 feature_info_gain = get_info_gain_categorical(get_entropy_score, df, categorical_feature)
@@ -113,9 +113,6 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
     seen_features.add(max_score_feature)
 
     if max_feature_score == 0 or max_score_feature == '':
-        # print("df check" + df[target_column].mode())
-        if( st.mode(np.array(df[target_column])) is None):
-            print("None")
         return Leaf(st.mode(np.array(df[target_column])))
     
     # check if split is recommended by chi squared test
@@ -130,8 +127,6 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
     chi_squared_table_value = chi2.ppf(confidence_interval, degrees_of_freedom)
 
     if chi_squared_table_value > split_chi_squared_value:
-        if( st.mode(np.array(df[target_column])) is None):
-            print("None")
         return Leaf(st.mode(np.array(df[target_column])))
     
     # create branches from the node for all attributes of the selected feature
