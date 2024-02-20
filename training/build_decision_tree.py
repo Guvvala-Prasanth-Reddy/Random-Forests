@@ -96,7 +96,7 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
     for continuous_feature in df.columns:
         if (not (continuous_feature in categorical_features)) and (
            continuous_feature != target_column and continuous_feature != 'TransactionID'
-           ) and (not (continuous_feature in seen_features)):
+           ):
             feature_info_gain = 0
             feature_cutoff_value = 0
             if split_metric == 'entropy':
@@ -110,8 +110,9 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
                 max_feature_score = feature_info_gain
                 max_score_feature = continuous_feature
                 continuous_cutoff_value = feature_cutoff_value
-                
-    seen_features.add(max_score_feature)
+
+    if max_score_feature in categorical_features:
+        seen_features.add(max_score_feature)
 
     if max_feature_score == 0 or max_score_feature == '':
         return Leaf(st.mode(np.array(df[target_column])))
