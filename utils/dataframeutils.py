@@ -75,7 +75,7 @@ def split_data(df : pd.DataFrame , column_sample_size , row_sample_size, replace
     columns = df.columns
     columns = columns.drop( labels=["TransactionID", "isFraud"] )
     columns = list(columns)
-    columns = random.sample( columns , k = int(column_sample_size*len(df.columns)))
+    columns = random.sample( columns , k = min(int(column_sample_size*len(df.columns)), len(columns)))
     columns.append("TransactionID")
     columns.append( "isFraud" )
     df = df[columns]
