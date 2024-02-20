@@ -75,7 +75,7 @@ def split_data(df : pd.DataFrame , column_sample_size , row_sample_size, replace
     columns = df.columns
     columns = columns.drop( labels=["TransactionID", "isFraud"] )
     columns = list(columns)
-    columns = random.sample( columns , k = min(int(column_sample_size*len(df.columns)), len(columns)))
+    columns = random.sample(columns, k = int(column_sample_size*len(columns)))
     columns.append("TransactionID")
     columns.append( "isFraud" )
     df = df[columns]
@@ -83,5 +83,7 @@ def split_data(df : pd.DataFrame , column_sample_size , row_sample_size, replace
     # do row bagging here
     df = df.sample(frac=row_sample_size, replace=replace)
 
+
     X_train , X_test , y_train, y_test = train_test_data_split(df , mode = train_test )
-    return (pd.concat([X_train , y_train] , axis = 1) , pd.concat([X_test ,y_test] , axis=1) )
+    return (pd.concat([X_train , y_train] , axis = 1).reset_index(drop=True) , pd.concat([X_test ,y_test] , axis=1).reset_index(drop=True))
+

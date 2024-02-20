@@ -48,17 +48,32 @@ def get_info_gain_continuous(impurity_function , df: pd.DataFrame , feature:str)
 
     for row_idx in range(len(df.index) - 1):
 
-        # df is indexed by TransactionID, not from 0, 1, 2, ...
-        # so in order to traverse the rows sequentially by index, we
-        # must sequentially get the values of df.index
+        # after the sort above, rows are not ordered by indices 0, 1, 2, ...
+        # need to traverse df.index sequentially to compare adjacent rows
         nth_row_index = df.index[row_idx]
         n_plus_oneth_row_index = df.index[row_idx + 1]
 
+        #print('Trying something new')
+        #print(df.loc[nth_row_index, target_column])
+        #print(df.loc[n_plus_oneth_row_index, target_column])
+
+        #print('Raw feature values')
+        #print(df.get(target_column)[nth_row_index], type(df.get(target_column)[nth_row_index]))
+        #print(df.get(target_column)[n_plus_oneth_row_index], type(df.get(target_column)[n_plus_oneth_row_index]))
+
+        #print('Processed feature values')
+        #print(df.get(target_column)[nth_row_index].tolist(), type(df.get(target_column)[nth_row_index].tolist()))
+        #print(df.get(target_column)[n_plus_oneth_row_index].tolist(), type(df.get(target_column)[n_plus_oneth_row_index].tolist()))
+
         # arranging if/else this way should increase performance from branch prediction
-        if df.get(target_column)[nth_row_index] == df.get(target_column)[n_plus_oneth_row_index]:
+        if df.loc[nth_row_index, target_column] == df.get(target_column)[n_plus_oneth_row_index]:
+    
             continue
         else:
             split_value = (df.get(feature)[nth_row_index] + df.get(feature)[n_plus_oneth_row_index]) / 2
+
+            if split_value == min(df.get(feature)) or split_value == max(df.get(feature)):
+                return (0, 0)
 
             info_gain = df_impurity
             info_gain -= len(df.loc[df[feature] < split_value]) / len_df * impurity_function(df.loc[df[feature] < split_value])
@@ -89,6 +104,7 @@ def get_list_of_probabilities_classification(df: pd.DataFrame) -> np.array:
     target_proportions = np.zeros(len(unique_targets))
     for (idx, target) in enumerate(unique_targets):
         target_proportions[idx] = len(df.loc[df[target_column] == target]) / len(df)
+    print(target_proportions)
     return target_proportions
     
 

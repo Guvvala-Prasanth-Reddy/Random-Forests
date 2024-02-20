@@ -9,6 +9,7 @@ import time
 import sys
 import statistics as st
 import pickle
+from validation.validate import get_tree_acc
 
 MISSING_VALUE_TERMS = ['notFound', float('NaN'), 'NaN']
 
@@ -175,6 +176,8 @@ if __name__ == "__main__":
     print(len(df1))
     tree = build_tree(df1)
     print(f'Time to build tree: {time.time() - start_time} seconds')
+
+    tree_acc = 
 
     # save tree model to file
     file = open('tree-model', 'wb')
