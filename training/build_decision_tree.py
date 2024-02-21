@@ -165,22 +165,18 @@ if __name__ == "__main__":
 
     start_time = time.time()
 
-    df = pd.read_csv("data/train.csv")
-    print(f'Time to read file: {time.time() - start_time} seconds')
-    start_time = time.time()
+    whole_training_data = pd.read_csv('data/train.csv')
+    whole_training_data = handle_missing_values(whole_training_data)
 
-    df = handle_missing_values(df)
-    print(f'Time to handle missing values: {time.time() - start_time} seconds')
-    print(df)
-    start_time = time.time()
-    df1 = df.sample(frac = 0.01)
-    print(len(df1))
-    tree = build_tree(df1)
-    print(f'Time to build tree: {time.time() - start_time} seconds')
+    # divide into separate training and testing datasets
+    (training_data, testing_data) = split_data(whole_training_data, 1, 1, False)
+    
+    tree = build_tree(training_data)
+    tree_acc = get_tree_acc(tree, testing_data)
 
-    tree_acc = 
+    print(f'Time to build and validate tree (accuracy {tree_acc}): {time.time() - start_time} seconds')
 
     # save tree model to file
-    file = open('tree-model', 'wb')
+    file = open(f'tree-acc-{tree_acc}', 'wb')
     pickle.dump(tree, file)
     file.close()
