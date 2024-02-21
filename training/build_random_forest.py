@@ -30,43 +30,15 @@ def build_random_forest(df: pd.DataFrame, num_trees=no_of_trees_in_forest):
     for i in range(num_trees):
 
         # this is the bagged data used for training this tree of the forest
-        (tree_data_train, _) = split_data(df, 0.75, 0.1, True)
+        (tree_train_data, tree_test_data) = split_data(df, 0.75, 0.1, True)
+         
+        tree = build_tree(
+            tree_train_data,
+            split_metric='misclassification'
+        )
 
-        #forest.add_tree(build_decision_tree(tree_data_train))
-        #return forest
-
-
-
-        # k-fold cross validation
-        num_k_fold = 5
-        k_fold_data = train_test_data_split(tree_data_train, mode=stratified_k_fold, number_of_folds=num_k_fold)
-
-        best_tree = None
-        best_tree_acc = float('-inf')
-
-        counter = 0
-        for value in k_fold_data:
-
-            print(f'Started k fold tree {counter} of {num_k_fold}')
-
-            training_indices = value[0]
-            testing_indicies = value[1]
-
-            tree = build_tree(
-                tree_data_train.iloc[training_indices],
-                split_metric='misclassification'
-            )
-
-            tree_acc = get_tree_acc(tree, tree_data_train.iloc[testing_indicies])
-
-            print(f'Finished k fold tree {counter} of {num_k_fold}')
-            counter += 1
-
-            if tree_acc > best_tree_acc:
-                best_tree = tree
-                best_tree_acc = tree_acc
-
-        print(f'Tree {i} has accuracy {best_tree_acc}')
+        tree_acc = get_tree_acc(tree, tree_test_data)
+        print(f'Tree {i + 1} of {num_trees} completed with accuracy {tree_acc}')
 
         forest.add_tree(best_tree)
 
