@@ -127,7 +127,7 @@ def get_info_gain_continuous(impurity_function , df: pd.DataFrame , feature:str)
             split_value = (df.get(feature)[nth_row_index] + df.get(feature)[n_plus_oneth_row_index]) / 2
 
             if split_value == min(df.get(feature)) or split_value == max(df.get(feature)):
-                return (0, 0)
+                continue
 
             info_gain = df_impurity
             info_gain -= len(df.loc[df[feature] < split_value]) / len_df * impurity_function(df.loc[df[feature] < split_value])
