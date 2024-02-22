@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from utils.consts import *
-
+from numba import jit
 
 def get_info_gain_categorical(impurity_function , df: pd.DataFrame , feature:str) -> float:
     """ Returns the information gain of the provided dataset considering a split on the provided
@@ -17,6 +17,60 @@ def get_info_gain_categorical(impurity_function , df: pd.DataFrame , feature:str
     for feature_value in pd.unique(df[feature]):
         info_gain -= len(df.loc[df[feature] == feature_value]) / len(df) * impurity_function(df.loc[df[feature] == feature_value])
     return info_gain
+
+def get_info_gain_continuous_cuda(df: pd.DataFrame, feature: str) -> tuple[float, float]:
+    """ Returns the information gain of the provided continuous feature using GPU
+    """
+    df_sorted = df.sort_values(by=feature, inplace=False)
+    return cuda_info_gain(df_sorted[feature].to_numpy(), df_sorted[target_column].to_numpy())
+
+@jit(target_backend='cuda')                         
+def cuda_info_gain(feature_array: np.array, target_array: np.array) -> tuple[float, float]:
+    """ Testing CUDA implementation of continuous info gain
+    """
+
+    feature_array_len = len(feature_array)
+
+    max_info_gain = 0
+    max_info_gain_cutoff = 0
+
+    # determine impurity of whole feature column
+    target_proportions = np.zeros(len(np.unique(target_array)))
+    for (idx, target) in enumerate(np.unique(target_array)):
+        target_proportions[idx] = len(feature_array[feature_array == target]) / feature_array_len
+    feature_array_impurity = -1 * np.sum(np.multiply(target_proportions, np.log2(target_proportions)))
+
+    for i in range(len(target_array) - 1):
+        if target_array[i] != target_array[i+1]:
+            split_value = 0.5 * (target_array[i] + target_array[i + 1])
+
+            greater_than_split_indices = np.asarray(feature_array >= split_value).nonzero()
+            less_than_split_indices = np.asarray(feature_array < split_value).nonzero()
+
+            target_array_less_than = target_array[less_than_split_indices]
+            target_array_greater_than = target_array[greater_than_split_indices]
+
+            # determine impurity of less than feature set (entropy is hard-coded here)
+            less_than_feature_proportions = np.zeros(len(np.unique(target_array)))
+            for (idx, target) in enumerate(np.unique(target_array)):
+                less_than_feature_proportions[idx] = len(target_array_less_than[target_array_less_than == target]) / feature_array_len
+            less_than_split_impurity = -1 * np.sum(np.multiply(less_than_feature_proportions, np.log2(less_than_feature_proportions)))
+
+            # determine impurity of greater than feature set (entropy is hard-coded here)
+            greater_than_split_proportions = np.zeros(len(np.unique(target_array)))
+            for (idx, target) in enumerate(np.unique(target_array)):
+                greater_than_split_proportions[idx] = len(target_array_greater_than[target_array_less_than == target]) / feature_array_len
+            greater_than_split_impurity = -1 * np.sum(np.multiply(greater_than_split_proportions, np.log2(greater_than_split_proportions)))
+
+            info_gain = feature_array_impurity
+            info_gain += len(greater_than_split_indices) / feature_array_len * greater_than_split_impurity
+            info_gain += len(less_than_split_indices) / feature_array_len * less_than_split_impurity
+
+            if info_gain > max_info_gain:
+                max_info_gain = info_gain
+                max_info_gain_cutoff = split_value
+
+    return (max_info_gain, max_info_gain_cutoff)
 
 
 def get_info_gain_continuous(impurity_function , df: pd.DataFrame , feature:str) -> float:
