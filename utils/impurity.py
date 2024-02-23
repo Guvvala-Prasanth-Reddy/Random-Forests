@@ -24,7 +24,7 @@ def get_info_gain_continuous_cuda(df: pd.DataFrame, feature: str) -> tuple[float
     df_sorted = df.sort_values(by=feature, inplace=False)
     return cuda_info_gain(df_sorted[feature].to_numpy(), df_sorted[target_column].to_numpy())
 
-@jit(target_backend='cuda')                         
+@jit(target_backend='cuda', nopython=True)                         
 def cuda_info_gain(feature_array: np.array, target_array: np.array) -> tuple[float, float]:
     """ Testing CUDA implementation of continuous info gain
     """
@@ -40,35 +40,45 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array) -> tuple[flo
         target_proportions[idx] = len(feature_array[feature_array == target]) / feature_array_len
     feature_array_impurity = -1 * np.sum(np.multiply(target_proportions, np.log2(target_proportions)))
 
-    for i in range(len(target_array) - 1):
-        if target_array[i] != target_array[i+1]:
-            split_value = 0.5 * (target_array[i] + target_array[i + 1])
+    target_positive_indices = np.asarray(target_array == 1).nonzero()[0]
 
-            greater_than_split_indices = np.asarray(feature_array >= split_value).nonzero()
-            less_than_split_indices = np.asarray(feature_array < split_value).nonzero()
+    for positive_index in target_positive_indices:
+        for adjacent_index in [positive_index - 1, positive_index + 1]:
+            if (adjacent_index > 0 and adjacent_index < len(feature_array) - 1) and (target_array[adjacent_index] != target_array[positive_index]):
+                split_value = 0.5 * (feature_array[positive_index] + feature_array[adjacent_index])
+    
+                greater_than_split_indices = np.asarray(feature_array >= split_value).nonzero()[0]
+                less_than_split_indices = np.asarray(feature_array < split_value).nonzero()[0]
+    
+                target_array_less_than = target_array[less_than_split_indices]
+                target_array_greater_than = target_array[greater_than_split_indices]
+    
+                # determine impurity of less than feature set (entropy is hard-coded here)
+                less_than_feature_proportions = np.zeros(len(np.unique(target_array)))
+                for (idx, target) in enumerate(np.unique(target_array)):
+                    less_than_feature_proportions[idx] = len(target_array_less_than[target_array_less_than == target]) / feature_array_len
+                less_than_split_impurity = -1 * np.sum(np.multiply(less_than_feature_proportions, np.log2(less_than_feature_proportions)))
+    
+                # determine impurity of greater than feature set (entropy is hard-coded here)
+                greater_than_feature_proportions = np.zeros(len(np.unique(target_array)))
+                for (idx, target) in enumerate(np.unique(target_array)):
+                    greater_than_feature_proportions[idx] = len(target_array_greater_than[target_array_greater_than == target]) / feature_array_len
+                greater_than_split_impurity = -1 * np.sum(np.multiply(greater_than_feature_proportions, np.log2(greater_than_feature_proportions)))
 
-            target_array_less_than = target_array[less_than_split_indices]
-            target_array_greater_than = target_array[greater_than_split_indices]
-
-            # determine impurity of less than feature set (entropy is hard-coded here)
-            less_than_feature_proportions = np.zeros(len(np.unique(target_array)))
-            for (idx, target) in enumerate(np.unique(target_array)):
-                less_than_feature_proportions[idx] = len(target_array_less_than[target_array_less_than == target]) / feature_array_len
-            less_than_split_impurity = -1 * np.sum(np.multiply(less_than_feature_proportions, np.log2(less_than_feature_proportions)))
-
-            # determine impurity of greater than feature set (entropy is hard-coded here)
-            greater_than_split_proportions = np.zeros(len(np.unique(target_array)))
-            for (idx, target) in enumerate(np.unique(target_array)):
-                greater_than_split_proportions[idx] = len(target_array_greater_than[target_array_less_than == target]) / feature_array_len
-            greater_than_split_impurity = -1 * np.sum(np.multiply(greater_than_split_proportions, np.log2(greater_than_split_proportions)))
-
-            info_gain = feature_array_impurity
-            info_gain += len(greater_than_split_indices) / feature_array_len * greater_than_split_impurity
-            info_gain += len(less_than_split_indices) / feature_array_len * less_than_split_impurity
-
-            if info_gain > max_info_gain:
-                max_info_gain = info_gain
-                max_info_gain_cutoff = split_value
+                # if a particular split is empty (all data in one branch), the impurity of the empty
+                # split will be NaN due to log2(0)
+                if np.isnan(less_than_split_impurity):
+                    less_than_split_impurity = 0
+                if np.isnan(greater_than_split_impurity):
+                    greater_than_split_impurity = 0                
+                
+                info_gain = feature_array_impurity
+                info_gain -= len(greater_than_split_indices) / feature_array_len * greater_than_split_impurity
+                info_gain -= len(less_than_split_indices) / feature_array_len * less_than_split_impurity
+    
+                if info_gain > max_info_gain:
+                    max_info_gain = info_gain
+                    max_info_gain_cutoff = split_value
 
     return (max_info_gain, max_info_gain_cutoff)
 
