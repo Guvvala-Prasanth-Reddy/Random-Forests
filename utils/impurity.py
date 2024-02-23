@@ -29,14 +29,17 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array) -> tuple[flo
     """ Testing CUDA implementation of continuous info gain
     """
 
+    # caching these values so they are only computed once
     feature_array_len = len(feature_array)
+    num_unique_targets = len(np.unique(target_array))
+    unique_targets = np.unique(target_array)
 
     max_info_gain = 0
     max_info_gain_cutoff = 0
 
     # determine impurity of whole feature column
-    target_proportions = np.zeros(len(np.unique(target_array)))
-    for (idx, target) in enumerate(np.unique(target_array)):
+    target_proportions = np.zeros(num_unique_targets)
+    for (idx, target) in enumerate(unique_targets):
         target_proportions[idx] = len(feature_array[feature_array == target]) / feature_array_len
     feature_array_impurity = -1 * np.sum(np.multiply(target_proportions, np.log2(target_proportions)))
 
@@ -54,14 +57,14 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array) -> tuple[flo
                 target_array_greater_than = target_array[greater_than_split_indices]
     
                 # determine impurity of less than feature set (entropy is hard-coded here)
-                less_than_feature_proportions = np.zeros(len(np.unique(target_array)))
-                for (idx, target) in enumerate(np.unique(target_array)):
+                less_than_feature_proportions = np.zeros(num_unique_targets)
+                for (idx, target) in enumerate(unique_targets):
                     less_than_feature_proportions[idx] = len(target_array_less_than[target_array_less_than == target]) / feature_array_len
                 less_than_split_impurity = -1 * np.sum(np.multiply(less_than_feature_proportions, np.log2(less_than_feature_proportions)))
     
                 # determine impurity of greater than feature set (entropy is hard-coded here)
-                greater_than_feature_proportions = np.zeros(len(np.unique(target_array)))
-                for (idx, target) in enumerate(np.unique(target_array)):
+                greater_than_feature_proportions = np.zeros(num_unique_targets)
+                for (idx, target) in enumerate(unique_targets):
                     greater_than_feature_proportions[idx] = len(target_array_greater_than[target_array_greater_than == target]) / feature_array_len
                 greater_than_split_impurity = -1 * np.sum(np.multiply(greater_than_feature_proportions, np.log2(greater_than_feature_proportions)))
 
