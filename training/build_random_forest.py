@@ -1,6 +1,4 @@
-from tree.Tree import Tree
 from tree.Forest import Forest
-from tree.Leaf import Leaf
 from tree.Node import Node
 from utils.consts import *
 from training.build_decision_tree import build_tree
@@ -11,8 +9,6 @@ import time
 from training.build_decision_tree import handle_missing_values
 import sys
 import pickle
-from time import gmtime, strftime
-import os
 
 sys.setrecursionlimit( 10**8)
 def dfs(tree , level ):
@@ -24,7 +20,18 @@ def dfs(tree , level ):
     else:
         print(tree.target)
 
-def build_random_forest(df: pd.DataFrame, num_trees=no_of_trees_in_forest):
+
+def build_random_forest(df: pd.DataFrame, num_trees=no_of_trees_in_forest) -> Forest:
+    """ Constructs a random forest using the provided training data
+
+        Parameters:
+            df: a dataframe of training data
+            num_trees: number of trees to include in the forest
+
+        Returns:
+            a Forest object representing the random forest trained on the
+                provided data
+    """
 
     forest = Forest()
     for i in range(num_trees):
@@ -38,14 +45,14 @@ def build_random_forest(df: pd.DataFrame, num_trees=no_of_trees_in_forest):
         )
 
         tree_acc = get_tree_acc(tree, tree_test_data)
-        print(f'Tree {i + 1} of {num_trees} completed with accuracy {tree_acc}')
+        forest.add_tree(tree)
 
-        forest.add_tree(best_tree)
+        print(f'Tree {i + 1} of {num_trees} completed with accuracy {tree_acc}')
 
     return forest
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
 
     t0 = time.time()
 
@@ -56,18 +63,17 @@ if __name__ == "__main__":
     # divide into separate training and testing datasets
     (training_data, testing_data) = split_data(whole_training_data, 1, 1, False)
 
-    num_trees = 3
-    forest = build_random_forest(training_data, num_trees=num_trees)
+    forest = build_random_forest(training_data, num_trees=no_of_trees_in_forest)
+    
+    forest_build_time = time.time() - t0
+    t0 = time.time()
+    print(f'Forest build in {forest_build_time} seconds')
 
     # get the accuracy of the forest
     forest_acc = get_forest_acc(forest, testing_data)
-    print(f'Forest accuracy: {forest_acc}')
+    print(f'Forest accuracy {forest_acc} in {time.time() - t0} seconds')
     
-    # save tree model to file
-    s = strftime("%a, %d %b %Y %H:%M:%S", gmtime())
-    
-    file = open(f'models/forest-{s}-{num_trees}-trees-{forest_acc}-acc', 'wb')
+    file = open(f'models/forest-{no_of_trees_in_forest}-trees-{forest_acc}-acc', 'wb')
     pickle.dump(forest, file)
     file.close()
 
-    print(f'Forest build in {time.time() - t0} seconds')

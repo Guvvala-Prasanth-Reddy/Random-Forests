@@ -4,7 +4,6 @@ from sklearn.model_selection import KFold
 from utils.consts import *
 import random
 import pandas as pd
-import numpy as np
 
 
 def train_test_data_split(df : pd.DataFrame , mode : str = train_test , column_list : list[str] = []  , number_of_folds : int = 10 ) -> pd.DataFrame :
@@ -82,7 +81,6 @@ def split_data(df : pd.DataFrame , column_sample_size , row_sample_size, replace
 
     # do row bagging here
     df = df.sample(frac=row_sample_size, replace=replace)
-
 
     X_train , X_test , y_train, y_test = train_test_data_split(df , mode = train_test )
     return (pd.concat([X_train , y_train] , axis = 1).reset_index(drop=True) , pd.concat([X_test ,y_test] , axis=1).reset_index(drop=True))

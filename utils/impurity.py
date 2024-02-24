@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from utils.consts import *
 from numba import jit
+from typing import Callable
 
 def get_info_gain_categorical(impurity_function , df: pd.DataFrame , feature:str) -> float:
     """ Returns the information gain of the provided dataset considering a split on the provided
@@ -49,7 +50,6 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric
     else:
         feature_array_impurity = 1 - np.max(target_proportions)
 
-
     target_positive_indices = np.asarray(target_array == 1).nonzero()[0]
 
     for positive_index in target_positive_indices:
@@ -63,7 +63,7 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric
                 target_array_less_than = target_array[less_than_split_indices]
                 target_array_greater_than = target_array[greater_than_split_indices]
     
-                # determine impurity of less than feature set (entropy is hard-coded here)
+                # determine impurity of less than feature set
                 less_than_feature_proportions = np.zeros(num_unique_targets)
                 for (idx, target) in enumerate(unique_targets):
                     less_than_feature_proportions[idx] = len(target_array_less_than[target_array_less_than == target]) / feature_array_len
@@ -75,7 +75,7 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric
                 else:
                     less_than_split_impurity = 1 - np.max(less_than_feature_proportions)
     
-                # determine impurity of greater than feature set (entropy is hard-coded here)
+                # determine impurity of greater than feature set
                 greater_than_feature_proportions = np.zeros(num_unique_targets)
                 for (idx, target) in enumerate(unique_targets):
                     greater_than_feature_proportions[idx] = len(target_array_greater_than[target_array_greater_than == target]) / feature_array_len
@@ -105,7 +105,7 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric
     return (max_info_gain, max_info_gain_cutoff)
 
 
-def get_info_gain_continuous(impurity_function , df: pd.DataFrame , feature:str) -> float:
+def get_info_gain_continuous(impurity_function: Callable[[pd.DataFrame], float] , df: pd.DataFrame , feature:str) -> float:
     """ Returns the information gain of the provided dataset considering a split on the provided
         continuous feature.
 
@@ -120,7 +120,6 @@ def get_info_gain_continuous(impurity_function , df: pd.DataFrame , feature:str)
             gain respectively
     """
 
-
     # performing inplace sort causes pandas to show a warning during runtime
     df = df.sort_values(by=feature, inplace=False)
 
@@ -128,7 +127,7 @@ def get_info_gain_continuous(impurity_function , df: pd.DataFrame , feature:str)
     feature_max_info_gain_split = 0
 
     # caching these values outside of the loop so they only need to be
-    # computed oncec
+    # computed once
     df_impurity = impurity_function(df)
     len_df = len(df)
 
@@ -139,21 +138,8 @@ def get_info_gain_continuous(impurity_function , df: pd.DataFrame , feature:str)
         nth_row_index = df.index[row_idx]
         n_plus_oneth_row_index = df.index[row_idx + 1]
 
-        #print('Trying something new')
-        #print(df.loc[nth_row_index, target_column])
-        #print(df.loc[n_plus_oneth_row_index, target_column])
-
-        #print('Raw feature values')
-        #print(df.get(target_column)[nth_row_index], type(df.get(target_column)[nth_row_index]))
-        #print(df.get(target_column)[n_plus_oneth_row_index], type(df.get(target_column)[n_plus_oneth_row_index]))
-
-        #print('Processed feature values')
-        #print(df.get(target_column)[nth_row_index].tolist(), type(df.get(target_column)[nth_row_index].tolist()))
-        #print(df.get(target_column)[n_plus_oneth_row_index].tolist(), type(df.get(target_column)[n_plus_oneth_row_index].tolist()))
-
         # arranging if/else this way should increase performance from branch prediction
         if df.loc[nth_row_index, target_column] == df.get(target_column)[n_plus_oneth_row_index]:
-    
             continue
         else:
             split_value = (df.get(feature)[nth_row_index] + df.get(feature)[n_plus_oneth_row_index]) / 2
