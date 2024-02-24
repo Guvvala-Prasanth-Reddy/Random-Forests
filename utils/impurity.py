@@ -25,7 +25,7 @@ def get_info_gain_continuous_cuda(df: pd.DataFrame, feature: str) -> tuple[float
     return cuda_info_gain(df_sorted[feature].to_numpy(), df_sorted[target_column].to_numpy())
 
 @jit(target_backend='cuda', nopython=True)                         
-def cuda_info_gain(feature_array: np.array, target_array: np.array) -> tuple[float, float]:
+def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric: str='entropy') -> tuple[float, float]:
     """ Testing CUDA implementation of continuous info gain
     """
 
@@ -41,7 +41,14 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array) -> tuple[flo
     target_proportions = np.zeros(num_unique_targets)
     for (idx, target) in enumerate(unique_targets):
         target_proportions[idx] = len(feature_array[feature_array == target]) / feature_array_len
-    feature_array_impurity = -1 * np.sum(np.multiply(target_proportions, np.log2(target_proportions)))
+    feature_array_impurity = 0
+    if split_metric == 'entropy':
+        feature_array_impurity = -1 * np.sum(np.multiply(target_proportions, np.log2(target_proportions)))
+    elif split_metric == 'gini':
+        feature_array_impurity = 1 - np.sum(np.square(target_proportions))
+    else:
+        feature_array_impurity = 1 - np.max(target_proportions)
+
 
     target_positive_indices = np.asarray(target_array == 1).nonzero()[0]
 
@@ -60,13 +67,25 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array) -> tuple[flo
                 less_than_feature_proportions = np.zeros(num_unique_targets)
                 for (idx, target) in enumerate(unique_targets):
                     less_than_feature_proportions[idx] = len(target_array_less_than[target_array_less_than == target]) / feature_array_len
-                less_than_split_impurity = -1 * np.sum(np.multiply(less_than_feature_proportions, np.log2(less_than_feature_proportions)))
+                less_than_split_impurity = 0
+                if split_metric == 'entropy':
+                    less_than_split_impurity = -1 * np.sum(np.multiply(less_than_feature_proportions, np.log2(less_than_feature_proportions)))
+                elif split_metric == 'gini':
+                    less_than_split_impurity = 1 - np.sum(np.square(less_than_feature_proportions))
+                else:
+                    less_than_split_impurity = 1 - np.max(less_than_feature_proportions)
     
                 # determine impurity of greater than feature set (entropy is hard-coded here)
                 greater_than_feature_proportions = np.zeros(num_unique_targets)
                 for (idx, target) in enumerate(unique_targets):
                     greater_than_feature_proportions[idx] = len(target_array_greater_than[target_array_greater_than == target]) / feature_array_len
-                greater_than_split_impurity = -1 * np.sum(np.multiply(greater_than_feature_proportions, np.log2(greater_than_feature_proportions)))
+                greater_than_split_impurity = 0
+                if split_metric == 'entropy':
+                    greater_than_split_impurity = -1 * np.sum(np.multiply(greater_than_feature_proportions, np.log2(greater_than_feature_proportions)))
+                elif split_metric == 'gini':
+                    greater_than_split_impurity = 1 - np.sum(np.square(greater_than_feature_proportions))
+                else:
+                    greater_than_split_impurity = 1 - np.max(greater_than_feature_proportions)
 
                 # if a particular split is empty (all data in one branch), the impurity of the empty
                 # split will be NaN due to log2(0)
