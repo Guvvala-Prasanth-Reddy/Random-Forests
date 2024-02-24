@@ -2,7 +2,7 @@ import pickle
 from tree.Tree import Tree
 from tree.Forest import Forest
 
-def read_tree_model(filepath: str) -> Forest:
+def read_forest_model(filepath: str) -> Forest:
     """ Reads a Forest object from file and returns it.
 
         Parameters:
@@ -35,4 +35,3 @@ def read_tree_model(filepath: str) -> Tree:
     except Exception:
         print('Error reading model from file. Exiting.')
         exit(1)
-
