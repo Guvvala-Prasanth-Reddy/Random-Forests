@@ -6,10 +6,10 @@ from tree.Branch import Branch
 from tree.Node import Node
 from utils.impurity import *
 import time
-import sys
 import statistics as st
 import pickle
 from validation.validate import get_tree_acc
+from utils.dataframeutils import split_data
 
 MISSING_VALUE_TERMS = ['notFound', float('NaN'), 'NaN']
 
@@ -66,8 +66,6 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
 
     """
 
-    print(f'  Entering build_tree() with a df of size {len(df)}')
-
     # check whether all targets are the same in the provided dataset
     if len(pd.unique(df[target_column])) == 1:
         return Leaf(list(df[target_column])[0])
@@ -97,15 +95,9 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
         if (not (continuous_feature in categorical_features)) and (
            continuous_feature != target_column and continuous_feature != 'TransactionID'
            ):
-            feature_info_gain = 0
-            feature_cutoff_value = 0
-            if split_metric == 'entropy':
-                (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous(get_entropy_score, df, continuous_feature)
-            elif split_metric == 'gini':
-                (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous(get_gini_score, df, continuous_feature)
-            else:
-                (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous(get_misclassification_score, df, continuous_feature)
 
+            (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous(get_entropy_score, df, continuous_feature, split_metric)
+            
             if feature_info_gain > max_feature_score:
                 max_feature_score = feature_info_gain
                 max_score_feature = continuous_feature
@@ -165,18 +157,27 @@ if __name__ == "__main__":
 
     start_time = time.time()
 
+    # read entire training dataset and handle missing values
     whole_training_data = pd.read_csv('data/train.csv')
     whole_training_data = handle_missing_values(whole_training_data)
 
     # divide into separate training and testing datasets
     (training_data, testing_data) = split_data(whole_training_data, 1, 1, False)
-    
-    tree = build_tree(training_data)
-    tree_acc = get_tree_acc(tree, testing_data)
 
-    print(f'Time to build and validate tree (accuracy {tree_acc}): {time.time() - start_time} seconds')
+    is_fraud_rows = training_data.loc[training_data[target_column] == 1]
+    is_not_fraud_rows = training_data.loc[training_data[target_column] == 0]
+    sampled_is_not_fraud_rows = is_not_fraud_rows.sample(frac=1.0)
+    sampled_training_data = pd.concat([is_fraud_rows, sampled_is_not_fraud_rows], axis=0).reset_index(drop=True)
+
+    tree = build_tree(sampled_training_data)
+    tree_build_time = time.time() - start_time
+    print(f'Time to build tree ({len(sampled_training_data)} rows): {time.time() - start_time} seconds')
+    start_time = time.time()
+
+    tree_acc = get_tree_acc(tree, testing_data)
+    print(f'Tree accuracy (generated in {time.time() - start_time} seconds): {tree_acc}')
 
     # save tree model to file
-    file = open(f'tree-acc-{tree_acc}', 'wb')
+    file = open(f'tree-{tree_acc}-acc-{int(tree_build_time)}-seconds-{len(sampled_training_data)}-of-{len(whole_training_data)}-rows', 'wb')
     pickle.dump(tree, file)
     file.close()

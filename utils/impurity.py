@@ -18,11 +18,11 @@ def get_info_gain_categorical(impurity_function , df: pd.DataFrame , feature:str
         info_gain -= len(df.loc[df[feature] == feature_value]) / len(df) * impurity_function(df.loc[df[feature] == feature_value])
     return info_gain
 
-def get_info_gain_continuous_cuda(df: pd.DataFrame, feature: str) -> tuple[float, float]:
+def get_info_gain_continuous_cuda(df: pd.DataFrame, feature: str, split_metric: str) -> tuple[float, float]:
     """ Returns the information gain of the provided continuous feature using GPU
     """
     df_sorted = df.sort_values(by=feature, inplace=False)
-    return cuda_info_gain(df_sorted[feature].to_numpy(), df_sorted[target_column].to_numpy())
+    return cuda_info_gain(df_sorted[feature].to_numpy(), df_sorted[target_column].to_numpy(), split_metric)
 
 @jit(target_backend='cuda', nopython=True)                         
 def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric: str='entropy') -> tuple[float, float]:
