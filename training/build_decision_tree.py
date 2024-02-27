@@ -96,7 +96,7 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
            continuous_feature != target_column and continuous_feature != 'TransactionID'
            ):
 
-            (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous(get_entropy_score, df, continuous_feature, split_metric)
+            (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous_cuda(df, continuous_feature, split_metric)
             
             if feature_info_gain > max_feature_score:
                 max_feature_score = feature_info_gain
