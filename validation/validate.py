@@ -6,9 +6,9 @@ from tree.Forest import Forest
 
 
 def get_balanced_error_efficient(true_targets: pd.DataFrame, pred_targets: pd.DataFrame) -> float:
-
-    positive_indices = true_targets.loc[true_targets == 1].index
-    negative_indices = true_targets.loc[true_targets == 0].index
+    print(true_targets)
+    positive_indices = true_targets.loc[true_targets[target_column] == 1].index
+    negative_indices = true_targets.loc[true_targets[target_column] == 0].index
 
     positive_true_targets = true_targets.iloc[positive_indices]
     negative_true_targets = true_targets.iloc[negative_indices]

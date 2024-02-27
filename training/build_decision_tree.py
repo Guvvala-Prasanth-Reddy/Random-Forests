@@ -97,7 +97,6 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
            ):
 
             (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous_cuda(df, continuous_feature, split_metric)
-            
             if feature_info_gain > max_feature_score:
                 max_feature_score = feature_info_gain
                 max_score_feature = continuous_feature

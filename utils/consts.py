@@ -9,7 +9,7 @@ categorical_features=["ProductCD",
                       "addr2"]
 target_column = 'isFraud'
 confidence_interval = 0.05
-no_of_trees_in_forest = 0
+no_of_trees_in_forest = 1
 hyper_parameters = []
 train_size = 0.7
 test_size = 0.3
