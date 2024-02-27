@@ -4,6 +4,28 @@ from utils.consts import target_column
 from classification.classify import tree_classify, forest_classify
 from tree.Forest import Forest
 
+
+def get_balanced_error_efficient(true_targets: pd.DataFrame, pred_targets: pd.DataFrame) -> float:
+
+    positive_indices = true_targets.loc[true_targets == 1].index
+    negative_indices = true_targets.loc[true_targets == 0].index
+
+    positive_true_targets = true_targets.iloc[positive_indices]
+    negative_true_targets = true_targets.iloc[negative_indices]
+
+    positive_predicted_targets = pred_targets.iloc[positive_indices]
+    negative_predicted_targets = pred_targets.iloc[negative_indices]
+
+    # get the number of matches between the positive and negative predictions
+    num_positive_matches = (positive_true_targets == positive_predicted_targets).sum()
+    num_negative_matches = (negative_true_targets == negative_predicted_targets).sum()
+
+    false_positive_rate = abs((len(true_targets) - num_negative_matches)) / len(true_targets)
+    false_negative_rate = abs((len(true_targets) - num_positive_matches)) / len(true_targets)
+
+    return 0.5 * (false_negative_rate + false_positive_rate)
+
+
 def get_balanced_error(true_targets: pd.DataFrame, pred_targets: pd.DataFrame) -> float:
     """ Returns the balanced error 
 
@@ -17,21 +39,14 @@ def get_balanced_error(true_targets: pd.DataFrame, pred_targets: pd.DataFrame) -
             the balanced error calculated from the provided predicted values and
             true values
     """
-    print(true_targets[true_targets.isna().any(axis=1)])
-    print(pred_targets[pred_targets.isna().any(axis=1)])
     
     true_target_name = list(true_targets.columns)[0]
-    # pred_target_name = list(pred_targets.columns)[0]
-    # print(true_targets , pred_targets)
 
     false_negative_count = 0
     false_positive_count = 0
-    print(true_targets.index , pred_targets.index)
     for i in range(len(true_targets)):
-        # print(i , type(i))
         true_target_val = true_targets.loc[i][target_column]
         pred_target_val = pred_targets.loc[i][target_column]
-        print(true_target_val , pred_target_val)
         if true_target_val == 1 and pred_target_val != 1:
             false_negative_count += 1
         if true_target_val == 0 and pred_target_val != 0:
@@ -61,12 +76,13 @@ def get_tree_acc(tree: Tree, df: pd.DataFrame) -> float:
         predicted_target = tree_classify(df.loc[[row_idx]], tree)
 
         if predicted_target is None:
-            return float('-inf')
+            predicted_target = 2
 
         predicted_targets.append( predicted_target )
 
     predicted_targets = pd.DataFrame( data = predicted_targets  , columns = [target_column])
-    balanced_err = get_balanced_error(true_targets, predicted_targets)
+    #balanced_err = get_balanced_error(true_targets, predicted_targets)
+    balanced_err = get_balanced_error_efficient(true_targets, predicted_targets)
     return 1 - balanced_err
 
 def get_forest_acc(forest: Forest, df: pd.DataFrame) -> float:
