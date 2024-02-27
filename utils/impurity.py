@@ -34,6 +34,8 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric
     feature_array_len = len(feature_array)
     num_unique_targets = len(np.unique(target_array))
     unique_targets = np.unique(target_array)
+    min_feature_val = np.min(feature_array)
+    max_feature_val = np.max(feature_array)
 
     max_info_gain = 0
     max_info_gain_cutoff = 0
@@ -56,7 +58,11 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric
         for adjacent_index in [positive_index - 1, positive_index + 1]:
             if (adjacent_index > 0 and adjacent_index < len(feature_array) - 1) and (target_array[adjacent_index] != target_array[positive_index]):
                 split_value = 0.5 * (feature_array[positive_index] + feature_array[adjacent_index])
-    
+
+                # do this check to avoid a split where one branch is empty
+                if split_value == min_feature_val or split_value == max_feature_val:
+                    continue    
+                    
                 greater_than_split_indices = np.asarray(feature_array >= split_value).nonzero()[0]
                 less_than_split_indices = np.asarray(feature_array < split_value).nonzero()[0]
     
