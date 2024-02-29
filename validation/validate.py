@@ -5,6 +5,30 @@ from classification.classify import tree_classify, forest_classify
 from tree.Forest import Forest
 
 
+def get_balanced_accuracy_efficient(true_targets: pd.DataFrame , pred_targets : pd.DataFrame ) -> float:
+    positive_indices = true_targets.loc[true_targets[target_column] == 1].index
+    negative_indices = true_targets.loc[true_targets[target_column] == 0].index
+
+    positive_true_targets = true_targets.iloc[positive_indices]
+    negative_true_targets = true_targets.iloc[negative_indices]
+
+    positive_predicted_targets = pred_targets.iloc[positive_indices]
+    negative_predicted_targets = pred_targets.iloc[negative_indices]
+
+    true_positive_matches = (positive_true_targets == positive_predicted_targets).sum()
+    false_negative_matches = (negative_true_targets == negative_predicted_targets).sum()
+
+    true_negative_matches = (positive_true_targets != positive_predicted_targets).sum()
+    false_positive_matches = ( negative_true_targets != negative_predicted_targets).sum()
+
+    true_positive_rate = true_positive_matches / (true_positive_matches + false_negative_matches)
+    true_negative_rate = true_negative_matches / ( true_negative_matches + false_positive_matches)
+
+    return 0.5 * ( true_negative_rate + true_positive_rate)
+
+
+
+
 def get_balanced_error_efficient(true_targets: pd.DataFrame, pred_targets: pd.DataFrame) -> float:
     print(true_targets)
     positive_indices = true_targets.loc[true_targets[target_column] == 1].index
@@ -58,7 +82,7 @@ def get_balanced_error(true_targets: pd.DataFrame, pred_targets: pd.DataFrame) -
     return 0.5 * (false_negative_rate + false_positive_rate)
 
 
-def get_tree_acc(tree: Tree, df: pd.DataFrame) -> float:
+def get_tree_acc(tree: Tree, df: pd.DataFrame) -> tuple :
     """ Returns the balanced accuracy of the provided tree on the provided dataset.
 
         Parameters:
@@ -83,7 +107,8 @@ def get_tree_acc(tree: Tree, df: pd.DataFrame) -> float:
     predicted_targets = pd.DataFrame( data = predicted_targets  , columns = [target_column])
     #balanced_err = get_balanced_error(true_targets, predicted_targets)
     balanced_err = get_balanced_error_efficient(true_targets, predicted_targets)
-    return 1 - balanced_err
+    balanced_accuracy = get_balanced_accuracy_efficient( true_targets , predicted_targets)
+    return (1 - balanced_err , balanced_accuracy)
 
 def get_forest_acc(forest: Forest, df: pd.DataFrame) -> float:
     """ Returns the balanced accuracy of the provided forest on the provided dataset.

@@ -37,7 +37,7 @@ def build_random_forest(df: pd.DataFrame, num_trees=no_of_trees_in_forest) -> Fo
     for i in range(num_trees):
 
         # this is the bagged data used for training this tree of the forest
-        (tree_train_data, tree_test_data) = split_data(df, 0.75, 0.1, True)
+        (tree_train_data, tree_test_data) = split_data(df, 0.75, 0.3, True)
          
         tree = build_tree(
             tree_train_data,
@@ -47,7 +47,7 @@ def build_random_forest(df: pd.DataFrame, num_trees=no_of_trees_in_forest) -> Fo
         tree_acc = get_tree_acc(tree, tree_test_data)
         forest.add_tree(tree)
 
-        print(f'Tree {i + 1} of {num_trees} completed with accuracy {tree_acc}')
+        print(f'Tree {i + 1} of {num_trees} completed with accuracy {tree_acc[1]} and error {tree_acc[0]}')
 
     return forest
 

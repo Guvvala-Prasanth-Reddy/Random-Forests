@@ -274,8 +274,6 @@ def get_chi_squared_value_continuous(df: pd.DataFrame, feature: str, cutoff_valu
 
         expectation = len(df.loc[df[feature] < cutoff_value]) * len(df.loc[df[target_column] == target]) / num_total_instances
         observation = len(df.loc[(df[feature] < cutoff_value) & (df[target_column] == target)])
-        if expectation == 0:
-            expectation = 0.001
 
         chi_squared_value += ((observation - expectation) ** 2) / expectation
 
