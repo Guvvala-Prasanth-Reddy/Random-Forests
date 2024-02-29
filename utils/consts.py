@@ -16,3 +16,4 @@ test_size = 0.3
 stratified_k_fold = "stratified-k-fold"
 train_test = "train_test_split"
 k_fold = "k_fold"
+max_depth=25
