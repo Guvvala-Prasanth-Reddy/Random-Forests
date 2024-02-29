@@ -74,6 +74,14 @@ def build_tree(df, seen_features=set(), split_metric='entropy', imbalance_factor
     if len(pd.unique(df[target_column])) == 1:
         return Leaf(list(df[target_column])[0])
 
+    # limit tree depth to predefined value
+    if level == max_depth and level > 0:
+        # take weighted mode of classes
+        if len(df.loc[df[target_column] == 0]) > imbalance_factor * len(df.loc[df[target_column] == 1]):
+            return Leaf(0)
+        else:
+            return Leaf(1)
+
     # record the categorical feature with the highest information gain, as well as its
     # corresponding information gain value
     max_score_feature = ''
