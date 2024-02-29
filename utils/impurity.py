@@ -4,7 +4,7 @@ from utils.consts import *
 from numba import jit
 from typing import Callable
 
-def get_info_gain_categorical(impurity_function , df: pd.DataFrame , feature:str) -> float:
+def get_info_gain_categorical(impurity_function , df: pd.DataFrame , feature:str, imbalance_factor=1.0) -> float:
     """ Returns the information gain of the provided dataset considering a split on the provided
         categorical feature.
 
@@ -16,17 +16,17 @@ def get_info_gain_categorical(impurity_function , df: pd.DataFrame , feature:str
 
     info_gain = impurity_function(df)
     for feature_value in pd.unique(df[feature]):
-        info_gain -= len(df.loc[df[feature] == feature_value]) / len(df) * impurity_function(df.loc[df[feature] == feature_value])
+        info_gain -= len(df.loc[df[feature] == feature_value]) / len(df) * impurity_function(df.loc[df[feature] == feature_value], imbalance_factor)
     return info_gain
 
-def get_info_gain_continuous_cuda(df: pd.DataFrame, feature: str, split_metric: str) -> tuple[float, float]:
+def get_info_gain_continuous_cuda(df: pd.DataFrame, feature: str, split_metric: str, imbalance_factor: float=1.0) -> tuple[float, float]:
     """ Returns the information gain of the provided continuous feature using GPU
     """
     df_sorted = df.sort_values(by=feature, inplace=False)
-    return cuda_info_gain(df_sorted[feature].to_numpy(), df_sorted[target_column].to_numpy(), split_metric)
+    return cuda_info_gain(df_sorted[feature].to_numpy(), df_sorted[target_column].to_numpy(), split_metric, imbalance_factor=imbalance_factor)
 
 @jit(target_backend='cuda', nopython=True)                         
-def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric: str='entropy') -> tuple[float, float]:
+def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric: str='entropy', imbalance_factor: float=1.0) -> tuple[float, float]:
     """ Testing CUDA implementation of continuous info gain
     """
 
@@ -72,7 +72,8 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric
                 # determine impurity of less than feature set
                 less_than_feature_proportions = np.zeros(num_unique_targets)
                 for (idx, target) in enumerate(unique_targets):
-                    less_than_feature_proportions[idx] = len(target_array_less_than[target_array_less_than == target]) / feature_array_len
+                    applied_imbalance_factor = 1.0 if target == 0 else imbalance_factor
+                    less_than_feature_proportions[idx] = applied_imbalance_factor * len(target_array_less_than[target_array_less_than == target]) / feature_array_len
                 less_than_split_impurity = 0
                 if split_metric == 'entropy':
                     less_than_split_impurity = -1 * np.sum(np.multiply(less_than_feature_proportions, np.log2(less_than_feature_proportions)))
@@ -84,7 +85,8 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric
                 # determine impurity of greater than feature set
                 greater_than_feature_proportions = np.zeros(num_unique_targets)
                 for (idx, target) in enumerate(unique_targets):
-                    greater_than_feature_proportions[idx] = len(target_array_greater_than[target_array_greater_than == target]) / feature_array_len
+                    applied_imbalance_factor = 1.0 if target == 0 else imbalance_factor
+                    greater_than_feature_proportions[idx] = applied_imbalance_factor * len(target_array_greater_than[target_array_greater_than == target]) / feature_array_len
                 greater_than_split_impurity = 0
                 if split_metric == 'entropy':
                     greater_than_split_impurity = -1 * np.sum(np.multiply(greater_than_feature_proportions, np.log2(greater_than_feature_proportions)))
@@ -167,7 +169,7 @@ def get_info_gain_continuous(impurity_function: Callable[[pd.DataFrame], float] 
     return (feature_max_info_gain, feature_max_info_gain_split)
 
 
-def get_list_of_probabilities_classification(df: pd.DataFrame) -> np.array:
+def get_list_of_probabilities_classification(df: pd.DataFrame, imbalance_factor: float=1.0) -> np.array:
     """ Returns a series of probabilites of occurences of different values in the feature column
 
         Parameters:
@@ -181,12 +183,14 @@ def get_list_of_probabilities_classification(df: pd.DataFrame) -> np.array:
     unique_targets = pd.unique(df[target_column])
     target_proportions = np.zeros(len(unique_targets))
     for (idx, target) in enumerate(unique_targets):
-        target_proportions[idx] = len(df.loc[df[target_column] == target]) / len(df)
-    print(target_proportions)
+        if target == 0:
+            target_proportions[idx] = len(df.loc[df[target_column] == target]) / len(df)
+        else:
+            target_proportions[idx] = imbalance_factor * len(df.loc[df[target_column] == target]) / len(df)
     return target_proportions
     
 
-def get_entropy_score(df: pd.DataFrame) -> float:
+def get_entropy_score(df: pd.DataFrame, imbalance_factor: float=1.0) -> float:
     """ Returns the entropy calculation of dataframe by considering feature column as the target
 
         Parameters:
@@ -195,29 +199,29 @@ def get_entropy_score(df: pd.DataFrame) -> float:
 
     # split this into two lines so that the function call to get_list_of_probabilities_classification()
     # only occurs once (small optimization)
-    classification_prob_list = get_list_of_probabilities_classification(df)
+    classification_prob_list = get_list_of_probabilities_classification(df, imbalance_factor)
     return -1 * np.sum(np.multiply(classification_prob_list, np.log2(classification_prob_list)))
 
 
-def get_gini_score(df: pd.DataFrame) -> float:
+def get_gini_score(df: pd.DataFrame, imbalance_factor: float=1.0) -> float:
     """ Returns the gini_index calculation of dataframe by considering feature column as the target
 
         Parameters:
             df : The data before splitting on feature
     """
-    return 1 - np.sum(np.square(get_list_of_probabilities_classification(df)))
+    return 1 - np.sum(np.square(get_list_of_probabilities_classification(df, imbalance_factor)))
 
     
-def get_misclassification_score(df: pd.DataFrame) -> float:
+def get_misclassification_score(df: pd.DataFrame, imbalance_factor: float=1.0) -> float:
     """ Returns the gini_index calculation of dataframe by considering feature column as the target
 
         Parameters:
             df : The data before splitting on feature
             feature : the feature i.e being considered for splitting criteria ( mainly target )
     """
-    return 1 - np.max(get_list_of_probabilities_classification(df))
+    return 1 - np.max(get_list_of_probabilities_classification(df, imbalance_factor))
 
-def get_chi_squared_value_categorical(df: pd.DataFrame, feature: str) -> float:
+def get_chi_squared_value_categorical(df: pd.DataFrame, feature: str, imbalance_factor: float=1.0) -> float:
     """ Computes the chi squared value of the provided dataset to be used in comparison
         to a value from the chi squared table
 
@@ -244,6 +248,10 @@ def get_chi_squared_value_categorical(df: pd.DataFrame, feature: str) -> float:
             # specific target value
             num_feature_value_split_with_target = len(df.loc[df[target_column] == target])
 
+            # weight class counts due to imbalanced dataset
+            if target == 1:
+                num_feature_value_split_with_target *= imbalance_factor
+
             expectation = num_feature_value_split * num_feature_value_split_with_target / num_total_instances
             observation = len(df.loc[(df[feature] == feature_value) & (df[target_column] == target)])
 
@@ -251,8 +259,8 @@ def get_chi_squared_value_categorical(df: pd.DataFrame, feature: str) -> float:
 
     return chi_squared_value
 
-def get_chi_squared_value_continuous(df: pd.DataFrame, feature: str, cutoff_value: float) -> float:
-    """ Computes the chi squared value of the provided dataset to be used in comparisonß
+def get_chi_squared_value_continuous(df: pd.DataFrame, feature: str, cutoff_value: float, imbalance_factor: float=1.0) -> float:
+    """ Computes the chi squared value of the provided dataset to be used in comparison
         to a value from the chi squared table
 
         Refer to class notes from 01/30 for presentation of this algorithm
@@ -262,6 +270,8 @@ def get_chi_squared_value_continuous(df: pd.DataFrame, feature: str, cutoff_valu
             feature: The continuous feature of the dataframe on which the split is being made
             cutoff_value (float): The cutoff point where the values of the provided
                 feature are split into different branches
+            imbalance_factor: the factor by which to artificially boost counts of the unrepresented
+                class due to imbalanced dataset
 
         Returns:
             float: The chi squared value of the dataset on the indicated feature split
@@ -272,13 +282,21 @@ def get_chi_squared_value_continuous(df: pd.DataFrame, feature: str, cutoff_valu
 
     for target in pd.unique(df.get(target_column)):
 
+        applied_imbalance_factor = imbalance_factor if target == 1 else 1.0 
+
         expectation = len(df.loc[df[feature] < cutoff_value]) * len(df.loc[df[target_column] == target]) / num_total_instances
         observation = len(df.loc[(df[feature] < cutoff_value) & (df[target_column] == target)])
+
+        expectation *= applied_imbalance_factor
+        observation *= applied_imbalance_factor
 
         chi_squared_value += ((observation - expectation) ** 2) / expectation
 
         expectation = len(df.loc[df[feature] >= cutoff_value]) * len(df.loc[df[target_column] == target]) / num_total_instances
         observation = len(df.loc[(df[feature] >= cutoff_value) & (df[target_column] == target)])
+
+        expectation *= applied_imbalance_factor
+        observation *= applied_imbalance_factor
 
         chi_squared_value += ((observation - expectation) ** 2) / expectation
 

@@ -48,7 +48,7 @@ def handle_missing_values(df):
     return df
 
 
-def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
+def build_tree(df, seen_features=set(), split_metric='entropy', imbalance_factor=1.0, level=0):
     """ Returns a decision tree object built upon the provided data.
 
         Parameters:
@@ -60,6 +60,10 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
                     'entropy': uses entropy
                     'gini': uses Gini index
                     'misclassification': uses misclassification error
+            imbalance_factor (float): the boost by which to increase the
+                minority class due to imbalanced data
+            level (int): the depth below the root at which this iteration
+                resides
 
         Returns:
             A decision tree object
@@ -78,11 +82,11 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
         if (not (categorical_feature in seen_features)) and (categorical_feature in categorical_features):
             feature_info_gain = 0
             if split_metric == 'entropy':
-                feature_info_gain = get_info_gain_categorical(get_entropy_score, df, categorical_feature)
+                feature_info_gain = get_info_gain_categorical(get_entropy_score, df, categorical_feature, imbalance_factor=imbalance_factor)
             elif split_metric == 'gini':
-                feature_info_gain = get_info_gain_categorical(get_gini_score, df, categorical_feature)
+                feature_info_gain = get_info_gain_categorical(get_gini_score, df, categorical_feature, imbalance_factor=imbalance_factor)
             else:
-                feature_info_gain = get_info_gain_categorical(get_misclassification_score, df, categorical_feature)
+                feature_info_gain = get_info_gain_categorical(get_misclassification_score, df, categorical_feature, imbalance_factor=imbalance_factor)
 
             if feature_info_gain > max_feature_score:
                 max_feature_score = feature_info_gain
@@ -96,7 +100,7 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
            continuous_feature != target_column and continuous_feature != 'TransactionID'
            ):
 
-            (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous_cuda(df, continuous_feature, split_metric)
+            (feature_info_gain, feature_cutoff_value) = get_info_gain_continuous_cuda(df, continuous_feature, split_metric, imbalance_factor=imbalance_factor)
             if feature_info_gain > max_feature_score:
                 max_feature_score = feature_info_gain
                 max_score_feature = continuous_feature
@@ -106,21 +110,29 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
         seen_features.add(max_score_feature)
 
     if max_feature_score == 0 or max_score_feature == '':
-        return Leaf(st.mode(np.array(df[target_column])))
-    
+        # take weighted mode of classes
+        if len(df.loc[df[target_column] == 0]) > imbalance_factor * len(df.loc[df[target_column] == 1]):
+            return Leaf(0)
+        else:
+            return Leaf(1)
+            
     # check if split is recommended by chi squared test
     split_chi_squared_value = 0
     degrees_of_freedom = 0
     if max_score_feature in categorical_features:
-        split_chi_squared_value = get_chi_squared_value_categorical(df, max_score_feature)
+        split_chi_squared_value = get_chi_squared_value_categorical(df, max_score_feature, imbalance_factor=imbalance_factor)
         degrees_of_freedom = (len(pd.unique(df[max_score_feature])) - 1) * (len(pd.unique(df[target_column])) - 1)
     else:
-        split_chi_squared_value = get_chi_squared_value_continuous(df, max_score_feature, continuous_cutoff_value)
+        split_chi_squared_value = get_chi_squared_value_continuous(df, max_score_feature, continuous_cutoff_value, imbalance_factor=imbalance_factor)
         degrees_of_freedom = len(pd.unique(df[target_column])) - 1
     chi_squared_table_value = chi2.ppf(confidence_interval, degrees_of_freedom)
 
     if chi_squared_table_value > split_chi_squared_value:
-        return Leaf(st.mode(np.array(df[target_column])))
+        # take weighted mode of classes
+        if len(df.loc[df[target_column] == 0]) > imbalance_factor * len(df.loc[df[target_column] == 1]):
+            return Leaf(0)
+        else:
+            return Leaf(1)
     
     # create branches from the node for all attributes of the selected feature
     node = Node(max_score_feature)
@@ -129,7 +141,8 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
             branch = Branch(feature_value,
                             build_tree(df.loc[df[max_score_feature] == feature_value],
                                        seen_features=seen_features, 
-                                       split_metric=split_metric, 
+                                       split_metric=split_metric,
+                                       imbalance_factor=imbalance_factor, 
                                        level=level+1))
             node.add_branch(branch)
     else:
@@ -137,11 +150,13 @@ def build_tree(df, seen_features=set(), split_metric='entropy', level=0):
                                   build_tree(df.loc[df[max_score_feature] < continuous_cutoff_value], 
                                              seen_features=seen_features,
                                              split_metric=split_metric,
+                                             imbalance_factor=imbalance_factor,
                                              level=level+1))
         greater_than_branch = Branch('>=' + str(continuous_cutoff_value),
                                      build_tree(df.loc[df[max_score_feature] >= continuous_cutoff_value], 
                                                 seen_features=seen_features,
                                                 split_metric=split_metric,
+                                                imbalance_factor=imbalance_factor,
                                                 level=level+1))
         node.add_branch(less_than_branch)
         node.add_branch(greater_than_branch)
@@ -168,7 +183,7 @@ if __name__ == "__main__":
     sampled_is_not_fraud_rows = is_not_fraud_rows.sample(frac=1.0)
     sampled_training_data = pd.concat([is_fraud_rows, sampled_is_not_fraud_rows], axis=0).reset_index(drop=True)
 
-    tree = build_tree(sampled_training_data)
+    tree = build_tree(sampled_training_data, imbalance_factor=len(is_not_fraud_rows) / len(is_fraud_rows))
     tree_build_time = time.time() - start_time
     print(f'Time to build tree ({len(sampled_training_data)} rows): {time.time() - start_time} seconds')
     start_time = time.time()
