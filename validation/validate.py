@@ -68,8 +68,9 @@ def get_tree_acc(tree: Tree, df: pd.DataFrame) -> tuple :
 
     predicted_targets = pd.DataFrame( data = predicted_targets  , columns = [target_column])
     balanced_err = get_balanced_error(true_targets, predicted_targets)
-    balanced_accuracy = get_balanced_accuracy_score( true_targets , predicted_targets)
+    balanced_accuracy = balanced_accuracy_score( true_targets , predicted_targets)
     return (balanced_err , balanced_accuracy)
+
 
 def get_forest_acc(forest: Forest, df: pd.DataFrame) -> float:
     """ Returns the balanced accuracy of the provided forest on the provided dataset.

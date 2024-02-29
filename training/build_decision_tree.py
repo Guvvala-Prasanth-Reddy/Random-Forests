@@ -196,7 +196,7 @@ if __name__ == "__main__":
     print(f'Time to build tree ({len(sampled_training_data)} rows): {time.time() - start_time} seconds')
     start_time = time.time()
 
-    tree_acc = get_tree_acc(tree, testing_data)
+    (tree_err, tree_acc) = get_tree_acc(tree, testing_data)
     print(f'Tree accuracy (generated in {time.time() - start_time} seconds): {tree_acc}')
 
     # save tree model to file
