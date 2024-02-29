@@ -34,8 +34,8 @@ def get_balanced_error(true_targets: pd.DataFrame, pred_targets: pd.DataFrame) -
     positive_indices = true_targets.loc[true_targets[target_column] == 1].index
     negative_indices = true_targets.loc[true_targets[target_column] == 0].index
 
-    num_false_positives = (true_targets.iloc[negative_indices] != pred_targets[negative_indices]).sum()
-    num_false_negatives = (true_targets.iloc[positive_indices] != pred_targets[positive_indices]).sum()
+    num_false_positives = (true_targets.iloc[negative_indices] != pred_targets.iloc[negative_indices]).sum()
+    num_false_negatives = (true_targets.iloc[positive_indices] != pred_targets.iloc[positive_indices]).sum()
 
     false_positive_rate = num_false_positives / len(true_targets.loc[true_targets[target_column] == 0])
     false_negative_rate = num_false_negatives / len(true_targets.loc[true_targets[target_column] == 1])
