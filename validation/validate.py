@@ -3,8 +3,50 @@ from tree.Tree import Tree
 from utils.consts import target_column
 from classification.classify import tree_classify, forest_classify
 from tree.Forest import Forest
+import numpy as np
+
+def get_balanced_accuracy_efficient(true_targets: pd.DataFrame , pred_targets : pd.DataFrame ) -> float:
+    "calculates balanced accuracy"
+    positive_indices = true_targets.loc[true_targets[target_column] == 1].index
+    negative_indices = true_targets.loc[true_targets[target_column] == 0].index
+
+    positive_true_targets = true_targets.iloc[positive_indices]
+    negative_true_targets = true_targets.iloc[negative_indices]
+
+    positive_predicted_targets = pred_targets.iloc[positive_indices]
+    negative_predicted_targets = pred_targets.iloc[negative_indices]
+
+    true_positive_matches = (positive_true_targets == positive_predicted_targets).sum()
+    false_negative_matches = (negative_true_targets == negative_predicted_targets).sum()
+
+    true_negative_matches = (positive_true_targets != positive_predicted_targets).sum()
+    false_positive_matches = ( negative_true_targets != negative_predicted_targets).sum()
+
+    true_positive_rate = true_positive_matches / (true_positive_matches + false_negative_matches)
+    true_negative_rate = true_negative_matches / ( true_negative_matches + false_positive_matches)
+
+    return 0.5 * ( true_negative_rate + true_positive_rate)
 
 
+
+
+def get_balanced_error_efficient(true_targets: pd.DataFrame, pred_targets: pd.DataFrame) -> float:
+    print(true_targets)
+    positive_indices = true_targets.loc[true_targets[target_column] == 1].index
+    negative_indices = true_targets.loc[true_targets[target_column] == 0].index
+
+    positive_true_targets = true_targets.iloc[positive_indices]
+    negative_true_targets = true_targets.iloc[negative_indices]
+
+    positive_predicted_targets = pred_targets.iloc[positive_indices]
+    negative_predicted_targets = pred_targets.iloc[negative_indices]
+
+    # get the number of matches between the positive and negative predictions
+    num_positive_matches = (positive_true_targets == positive_predicted_targets).sum()
+    num_negative_matches = (negative_true_targets == negative_predicted_targets).sum()
+
+    false_positive_rate = abs((len(true_targets) - num_negative_matches)) / len(true_targets)
+    false_negative_rate = abs((len(true_targets) - num_positive_matches)) / len(true_targets)
 def get_balanced_error_efficient(true_targets_col: pd.DataFrame, pred_targets_col: pd.DataFrame) -> float:
     """ Calculates balanced error in an efficient manner.
     """
