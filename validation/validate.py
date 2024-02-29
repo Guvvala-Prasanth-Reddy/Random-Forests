@@ -47,7 +47,8 @@ def get_balanced_error_efficient(true_targets: pd.DataFrame, pred_targets: pd.Da
 
     false_positive_rate = abs((len(true_targets) - num_negative_matches)) / len(true_targets)
     false_negative_rate = abs((len(true_targets) - num_positive_matches)) / len(true_targets)
-def get_balanced_error_efficient(true_targets_col: pd.DataFrame, pred_targets_col: pd.DataFrame) -> float:
+	
+def get_balanced_error_efficient2(true_targets_col: pd.DataFrame, pred_targets_col: pd.DataFrame) -> float:
     """ Calculates balanced error in an efficient manner.
     """
 
