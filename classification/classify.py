@@ -48,7 +48,7 @@ def forest_classify(df, forest):
 
 
 def generate_predictions_file(model_file: str, output_file='output.csv'):
-    """ Generates a CSV file of class predictions
+    """ Generates a CSV file of class predictions using a Forest model
     """
 
     model = read_forest_model(model_file)
