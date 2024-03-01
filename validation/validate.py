@@ -57,7 +57,7 @@ def get_tree_acc(tree: Tree, df: pd.DataFrame) -> tuple :
 
     true_targets = pd.DataFrame(data = list(df[target_column]) , columns = [target_column])
     predicted_targets = df.apply(tree_classify, args=(tree,), axis=1)
-    predicted_targets.replace( { None : 2 }, inplace=True)
+    predicted_targets.replace( { np.nan : 2 }, inplace=True)
     predicted_targets_df = predicted_targets.to_frame(name=target_column)
 
     balanced_err = get_balanced_error(true_targets, predicted_targets_df)
@@ -78,7 +78,7 @@ def get_forest_acc(forest: Forest, df: pd.DataFrame) -> float:
 
     true_targets = pd.DataFrame(data = list(df[target_column]) , columns = [target_column])
     predicted_targets = df.apply(forest_classify, args=(forest,), axis=1)
-    predicted_targets.replace( {None : 2 }, inplace=True)
+    predicted_targets.replace( {np.nan : 2 }, inplace=True)
     predicted_targets_df = predicted_targets.to_frame(name=target_column)
 
     balanced_err = get_balanced_error(true_targets, predicted_targets_df)
