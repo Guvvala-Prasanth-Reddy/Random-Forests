@@ -60,8 +60,8 @@ def get_tree_acc(tree: Tree, df: pd.DataFrame) -> tuple :
     predicted_targets.replace(to_replace=None, value=2, inplace=True)
     predicted_targets_df = predicted_targets.to_frame(name=target_column)
 
-    balanced_err = get_balanced_error(true_targets, predicted_targets)
-    balanced_accuracy = balanced_accuracy_score(true_targets , predicted_targets)
+    balanced_err = get_balanced_error(true_targets, predicted_targets_df)
+    balanced_accuracy = balanced_accuracy_score(true_targets , predicted_targets_df)
     return (balanced_err , balanced_accuracy)
 
 
@@ -81,7 +81,7 @@ def get_forest_acc(forest: Forest, df: pd.DataFrame) -> float:
     predicted_targets.replace(to_replace=None, value=2, inplace=True)
     predicted_targets_df = predicted_targets.to_frame(name=target_column)
 
-    balanced_err = get_balanced_error(true_targets, predicted_targets)
-    balanced_acc = balanced_accuracy_score(true_targets, predicted_targets)
+    balanced_err = get_balanced_error(true_targets, predicted_targets_df)
+    balanced_acc = balanced_accuracy_score(true_targets, predicted_targets_df)
     return (balanced_err, balanced_acc)
 
