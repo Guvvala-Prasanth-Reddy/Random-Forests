@@ -51,7 +51,7 @@ def generate_predictions_file(model_file: str, output_file='output.csv'):
     """ Generates a CSV file of class predictions using a Forest model
     """
 
-    model = read_forest_model(model_file)
+    forest_model = read_forest_model(model_file)
     testing_df = pd.read_csv('data/test.csv')
-    predictions = testing_df.apply(forest_classify, axis=1)
+    predictions = testing_df.apply(forest_classify, args=(forest_model), axis=1)
     predictions.to_csv(output_file, index=False)
