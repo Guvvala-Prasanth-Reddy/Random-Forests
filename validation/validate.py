@@ -56,19 +56,12 @@ def get_tree_acc(tree: Tree, df: pd.DataFrame) -> tuple :
     """
 
     true_targets = pd.DataFrame(data = list(df[target_column]) , columns = [target_column])
-    predicted_targets = []
+    predicted_targets = df.apply(tree_classify, axis=1)
+    predicted_targets.replace(to_replace=None, value=2, inplace=True)
+    predicted_targets_df = predicted_targets.to_frame(name=target_column)
 
-    for row_idx in df.index.values:
-        predicted_target = tree_classify(df.loc[[row_idx]], tree)
-
-        if predicted_target is None:
-            predicted_target = 2
-
-        predicted_targets.append( predicted_target )
-
-    predicted_targets = pd.DataFrame( data = predicted_targets  , columns = [target_column])
     balanced_err = get_balanced_error(true_targets, predicted_targets)
-    balanced_accuracy = balanced_accuracy_score( true_targets , predicted_targets)
+    balanced_accuracy = balanced_accuracy_score(true_targets , predicted_targets)
     return (balanced_err , balanced_accuracy)
 
 
@@ -84,13 +77,11 @@ def get_forest_acc(forest: Forest, df: pd.DataFrame) -> float:
     """
 
     true_targets = pd.DataFrame(data = list(df[target_column]) , columns = [target_column])
-    predicted_targets = []
+    predicted_targets = df.apply(forest_classify, axis=1)
+    predicted_targets.replace(to_replace=None, value=2, inplace=True)
+    predicted_targets_df = predicted_targets.to_frame(name=target_column)
 
-    for row_idx in df.index.values:
-        predicted_target = forest_classify(df.loc[[row_idx]], forest)
-        predicted_targets.append( predicted_target )
-
-    predicted_targets = pd.DataFrame( data = predicted_targets  , columns = [target_column])
     balanced_err = get_balanced_error(true_targets, predicted_targets)
-    return 1 - balanced_err
+    balanced_acc = balanced_accuracy_score(true_targets, predicted_targets)
+    return (balanced_err, balanced_acc)
 
