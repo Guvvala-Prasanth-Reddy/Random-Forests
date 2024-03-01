@@ -22,12 +22,12 @@ def tree_classify(df: pd.DataFrame, tree: Tree):
     # case 2: tree is a node
     if tree.feature in categorical_features:
         for branch in tree.branches:
-            if list(df[tree.feature])[0] == branch.feature_value:
+            if df[tree.feature] == branch.feature_value:
                 return tree_classify(df, branch.tree)
         
     else:
         split_cutoff_value = tree.branches[0].feature_value.replace('<', '')
-        feature_value = list(df[tree.feature])[0]
+        feature_value = df[tree.feature]
 
         if feature_value < float(split_cutoff_value):
             return tree_classify(df, tree.branches[0].tree)
