@@ -21,7 +21,7 @@ def dfs(tree , level ):
         print(tree.target)
 
 
-def build_random_forest(df: pd.DataFrame, num_trees=no_of_trees_in_forest) -> Forest:
+def build_random_forest(training_df: pd.DataFrame, testing_df: pd.DataFrame, num_trees=no_of_trees_in_forest) -> Forest:
     """ Constructs a random forest using the provided training data
 
         Parameters:
@@ -33,18 +33,31 @@ def build_random_forest(df: pd.DataFrame, num_trees=no_of_trees_in_forest) -> Fo
                 provided data
     """
 
+    cols_to_keep_frac = 0.8
+    rows_to_keep_frac = 0.8
+    
     forest = Forest()
     for i in range(num_trees):
 
-        # this is the bagged data used for training this tree of the forest
-        (tree_train_data, tree_test_data) = split_data(df, 0.75, 0.1, True)
+        # column bagging
+        feature_col_names = list(training_df.columns)
+        feature_col_names.remove(target_column)
+        feature_col_names.remove('TransactionID')
+        col_names_to_drop = random.sample(feature_col_names, int((1 - cols_to_keep_frac) * len(feature_col_names)))
+        sampled_training_df = training_df.drop(col_names_to_drop, axis=1)
+
+        # row bagging --> Stratify or use all positive samples
+        is_fraud_rows = sampled_training_df.loc[training_data[target_column] == 1]
+        is_not_fraud_rows = sampled_training_df.loc[training_data[target_column] == 0]
+        sampled_is_not_fraud_rows = is_not_fraud_rows.sample(frac=rows_to_keep_frac)
+        sampled_training_df = pd.concat([is_fraud_rows, sampled_is_not_fraud_rows], axis=0).reset_index(drop=True)
          
         tree = build_tree(
-            tree_train_data,
-            split_metric='misclassification'
+            sampled_training_df,
+            split_metric='entropy'
         )
 
-        tree_acc = get_tree_acc(tree, tree_test_data)
+        tree_acc = get_tree_acc(tree, testing_df)
         forest.add_tree(tree)
 
         print(f'Tree {i + 1} of {num_trees} completed with accuracy {tree_acc[1]} and error {tree_acc[0]}')
@@ -63,7 +76,7 @@ if __name__ == "__main__":
     # divide into separate training and testing datasets
     (training_data, testing_data) = split_data(whole_training_data, 1, 1, False)
 
-    forest = build_random_forest(training_data, num_trees=no_of_trees_in_forest)
+    forest = build_random_forest(training_data, testing_data, num_trees=no_of_trees_in_forest)
     
     forest_build_time = time.time() - t0
     t0 = time.time()
