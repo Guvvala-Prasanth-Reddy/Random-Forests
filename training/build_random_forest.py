@@ -49,13 +49,11 @@ def build_random_forest(training_df: pd.DataFrame, testing_df: pd.DataFrame, num
         # row bagging --> Stratify or use all positive samples
         is_fraud_rows = sampled_training_df.loc[training_data[target_column] == 1]
         is_not_fraud_rows = sampled_training_df.loc[training_data[target_column] == 0]
-        sampled_is_not_fraud_rows = is_not_fraud_rows.sample(frac=rows_to_keep_frac)
+        sampled_is_not_fraud_rows = is_not_fraud_rows.sample(frac=rows_to_keep_frac, replace=True)
         sampled_training_df = pd.concat([is_fraud_rows, sampled_is_not_fraud_rows], axis=0).reset_index(drop=True)
 
         # determine the imbalance factor using number of positive and negative targets
-        num_positive_targets = len(sampled_training_df.iloc[sampled_training_df[target_column] == 1])
-        num_negative_targets = len(sampled_training_df.iloc[sampled_training_df[target_column] == 0])
-        imbalance_factor = num_negative_targets / num_positive_targets
+        imbalance_factor = len(sampled_is_not_fraud_rows) / len(is_fraud_rows)
          
         tree = build_tree(
             sampled_training_df,
