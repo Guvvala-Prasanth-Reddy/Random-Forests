@@ -48,7 +48,7 @@ def handle_missing_values(df):
     return df
 
 
-def build_tree(df, seen_features=set(), split_metric='entropy', imbalance_factor=1.0, level=0):
+def build_tree(df, seen_features, split_metric='entropy', imbalance_factor=1.0, level=0):
     """ Returns a decision tree object built upon the provided data.
 
         Parameters:

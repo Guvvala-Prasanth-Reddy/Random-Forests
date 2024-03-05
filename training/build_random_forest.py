@@ -57,6 +57,7 @@ def build_random_forest(training_df: pd.DataFrame, testing_df: pd.DataFrame, num
          
         tree = build_tree(
             sampled_training_df,
+            set(),
             split_metric='entropy',
             imbalance_factor=imbalance_factor
         )
