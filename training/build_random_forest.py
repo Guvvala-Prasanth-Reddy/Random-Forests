@@ -33,8 +33,8 @@ def build_random_forest(training_df: pd.DataFrame, testing_df: pd.DataFrame, num
                 provided data
     """
 
-    cols_to_keep_frac = 0.8
-    rows_to_keep_frac = 0.8
+    cols_to_keep_frac = 8/25
+    rows_to_keep_frac = 1.0
     
     forest = Forest()
     for i in range(num_trees):
@@ -44,17 +44,18 @@ def build_random_forest(training_df: pd.DataFrame, testing_df: pd.DataFrame, num
         feature_col_names.remove(target_column)
         feature_col_names.remove('TransactionID')
         col_names_to_drop = random.sample(feature_col_names, int((1 - cols_to_keep_frac) * len(feature_col_names)))
-        sampled_training_df = training_df.drop(col_names_to_drop, axis=1)
+        sampled_training_df = training_df.drop(col_names_to_drop, axis=1, inplace=False)
 
         # row bagging --> Stratify or use all positive samples
-        is_fraud_rows = sampled_training_df.loc[training_data[target_column] == 1]
-        is_not_fraud_rows = sampled_training_df.loc[training_data[target_column] == 0]
+        is_fraud_rows = sampled_training_df.loc[sampled_training_df[target_column] == 1]
+        is_not_fraud_rows = sampled_training_df.loc[sampled_training_df[target_column] == 0]
         sampled_is_not_fraud_rows = is_not_fraud_rows.sample(frac=rows_to_keep_frac, replace=True)
         sampled_training_df = pd.concat([is_fraud_rows, sampled_is_not_fraud_rows], axis=0).reset_index(drop=True)
 
         # determine the imbalance factor using number of positive and negative targets
         imbalance_factor = len(sampled_is_not_fraud_rows) / len(is_fraud_rows)
-         
+
+        t0 = time.time()
         tree = build_tree(
             sampled_training_df,
             set(),
@@ -62,10 +63,10 @@ def build_random_forest(training_df: pd.DataFrame, testing_df: pd.DataFrame, num
             imbalance_factor=imbalance_factor
         )
 
-        tree_acc = get_tree_acc(tree, testing_df)
+        (tree_err, tree_acc) = get_tree_acc(tree, testing_df)
         forest.add_tree(tree)
 
-        print(f'Tree {i + 1} of {num_trees} completed with accuracy {tree_acc[1]} and error {tree_acc[0]}')
+        print(f'Tree {i + 1} of {num_trees} completed with accuracy {tree_acc} in {time.time() - t0} seconds')
 
     return forest
 
@@ -88,7 +89,7 @@ if __name__ == "__main__":
     print(f'Forest build in {forest_build_time} seconds')
 
     # get the accuracy of the forest
-    forest_acc = get_forest_acc(forest, testing_data)
+    (forest_err, forest_acc) = get_forest_acc(forest, testing_data)
     print(f'Forest accuracy {forest_acc} in {time.time() - t0} seconds')
     
     file = open(f'models/forest-{no_of_trees_in_forest}-trees-{forest_acc}-acc', 'wb')
