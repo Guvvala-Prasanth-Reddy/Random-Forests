@@ -9,43 +9,8 @@ import time
 import statistics as st
 import pickle
 from validation.validate import get_tree_acc
-from utils.dataframeutils import split_data
+from utils.dataframeutils import split_data , handle_missing_values
 
-MISSING_VALUE_TERMS = ['notFound', float('NaN'), 'NaN']
-
-def handle_missing_values(df):
-    """ Cleans data frame of missing values.
-
-    Parameters:
-        df: a Pandas dataframe
-
-    Returns:
-        The provided dataframe without missing values
-    """
-
-    # remove instances for which the target is not known
-    for i in range(len(MISSING_VALUE_TERMS)):
-        df = df.loc[df[target_column] != MISSING_VALUE_TERMS[i]]
-
-    # for missing feature values, replace by the average (for
-    # continuous features) or most common value (for categorical
-    # features) of the instances sharing the same target
-    df.replace('NotFound', float('nan'), inplace=True)
-
-    feature_missing_value_replacement_dict = dict()
-    for target_val in pd.unique(df[target_column]):
-        feature_missing_value_replacement_dict[target_val] = dict()
-        for feature in df.columns:
-            if feature in categorical_features:
-                feature_missing_value_replacement_dict[target_val][feature] = df.loc[df[target_column] == target_val].get(feature).mode()[0]
-            else:
-                feature_missing_value_replacement_dict[target_val][feature] = df.loc[df[target_column] == target_val].get(feature).mean()
-
-    for target in pd.unique(df[target_column]):
-        df1 = df.loc[df[target_column] == target].fillna(value = feature_missing_value_replacement_dict[target]).copy()
-        df.loc[df1.index] = df1
-
-    return df
 
 
 def build_tree(df, seen_features, split_metric='entropy', imbalance_factor=1.0, level=0):

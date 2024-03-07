@@ -6,7 +6,7 @@ import pandas as pd
 from utils.dataframeutils import *
 from validation.validate import get_tree_acc, get_forest_acc
 import time
-from training.build_decision_tree import handle_missing_values
+from utils.dataframeutils import handle_missing_values
 import sys
 import pickle
 
@@ -58,7 +58,7 @@ def build_random_forest(training_df: pd.DataFrame, testing_df: pd.DataFrame, num
         t0 = time.time()
         tree = build_tree(
             sampled_training_df,
-            set(),
+           set(),
             split_metric='entropy',
             imbalance_factor=imbalance_factor
         )

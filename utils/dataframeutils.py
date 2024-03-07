@@ -5,6 +5,41 @@ from utils.consts import *
 import random
 import pandas as pd
 
+MISSING_VALUE_TERMS = ['notFound', float('NaN'), 'NaN']
+
+def handle_missing_values(df):
+    """ Cleans data frame of missing values.
+
+    Parameters:
+        df: a Pandas dataframe
+
+    Returns:
+        The provided dataframe without missing values
+    """
+
+    # remove instances for which the target is not known
+    for i in range(len(MISSING_VALUE_TERMS)):
+        df = df.loc[df[target_column] != MISSING_VALUE_TERMS[i]]
+
+    # for missing feature values, replace by the average (for
+    # continuous features) or most common value (for categorical
+    # features) of the instances sharing the same target
+    df.replace('NotFound', float('nan'), inplace=True)
+
+    feature_missing_value_replacement_dict = dict()
+    for target_val in pd.unique(df[target_column]):
+        feature_missing_value_replacement_dict[target_val] = dict()
+        for feature in df.columns:
+            if feature in categorical_features:
+                feature_missing_value_replacement_dict[target_val][feature] = df.loc[df[target_column] == target_val].get(feature).mode()[0]
+            else:
+                feature_missing_value_replacement_dict[target_val][feature] = df.loc[df[target_column] == target_val].get(feature).mean()
+
+    for target in pd.unique(df[target_column]):
+        df1 = df.loc[df[target_column] == target].fillna(value = feature_missing_value_replacement_dict[target]).copy()
+        df.loc[df1.index] = df1
+
+    return df
 
 def train_test_data_split(df : pd.DataFrame , mode : str = train_test , column_list : list[str] = []  , number_of_folds : int = 10 ) -> pd.DataFrame :
     """ Returns a decision tree object built upon the provided data.

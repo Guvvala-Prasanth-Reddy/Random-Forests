@@ -5,7 +5,7 @@ import numpy as np
 import statistics as st
 import pandas as pd
 from utils.model_file_utils import *
-from training.build_decision_tree import handle_missing_values
+from utils.dataframeutils import handle_missing_values
 
 def tree_classify(df: pd.DataFrame, tree: Tree):
     """ Returns the decision tree classification of the given instance
