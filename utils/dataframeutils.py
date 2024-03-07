@@ -7,6 +7,24 @@ import pandas as pd
 
 MISSING_VALUE_TERMS = ['notFound', float('NaN'), 'NaN']
 
+def handle_missing_values_test(df: pd.DataFrame):
+    
+    # for missing feature values, replace by the average (for
+    # continuous features) or most common value (for categorical
+    # features) of the instances sharing the same target
+    df.replace('NotFound', float('nan'), inplace=True)
+
+    feature_missing_value_replacement_dict = dict()
+    for feature in df.columns:
+        if feature in categorical_features:
+            feature_missing_value_replacement_dict[feature] = df.get(feature).mode()[0]
+        else:
+            feature_missing_value_replacement_dict[feature] = df.get(feature).mean()
+
+        df[[feature]].fillna(value=feature_missing_value_replacement_dict[feature], inplace=True)
+
+    return df
+
 def handle_missing_values(df):
     """ Cleans data frame of missing values.
 
