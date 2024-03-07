@@ -4,6 +4,26 @@ from tree.Forest import Forest
 from tree.Leaf import Leaf
 import numpy as np
 
+
+def get_tree_node_count(tree: Tree) -> int:
+    """ Returns the number of nodes in the tree object.
+
+        Parameters:
+            tree: a Tree object
+
+        Returns:
+            the number of nodes contained in the provided Tree
+    """
+
+    if type(tree) is Leaf:
+        return 1
+    else:
+        branch_node_counts = np.zeros(len(tree.branches), dtype=np.uint16)
+        for idx, branch in enumerate(tree.branches):
+            branch_node_counts[idx] = 1 + get_tree_node_count(branch.tree)
+        return np.sum(branch_node_counts)
+    
+
 def get_tree_depth(tree: Tree) -> int:
     """ Returns the max depth of the provided tree model
 
