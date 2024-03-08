@@ -1,33 +1,36 @@
 # Random-Forests
-Cs529 first project
 
-## instructions to install the dependencies
-'''bash
+## Description
+
+UNM CS 529 Project 1. Random forests developed from scratch.
+
+## Instructions for Use
+
+### Instructions to install the dependencies
+```bash
 - python -m venv YOURVENV
 - YOURENV/Scripts/activate
 - pip install requirements.txt
-''' 
+```
 
-## Current TODOs:
+### Train Random Forest
 
-Prasanth
-- [x] Create tree structure classes
-- [x] Implement data split metric functions (entropy, Gini, misclassification)
-- [ ] Change the information gain function to support the regression based column types.
-- [ ] code under review and has to undergo beta testing and has to undergo beta testing before mergin with main
-Thomas
-- [x] Implement `build_tree()`
-- [x] Implement `classify()`
-- [ ] find the recently pushed code and make change to build_tree acccording to the changes
-- [ ] code under review and has to undergo beta testing before merging with main
+`python -m training.build_random_forest path/to/train.csv`
 
-Next meeting: Tuesday, February 8th, Time is yet to be decided
+## Developer Contributions
 
-Futher tasks will be added soon as the meeting completes.
+Prasanth Guvvala
+- Implemented handling of missing value functions.
+- Implemented information gain criteria methods.
+- Implemented custom tree data objects.
+- Implemented methods to sample and split data into testing and training sets.
 
-## Tentative Schedule:
+Thomas Fisher
+- Implemented function to build decision tree.
+- Implemented validation functions for trees and forests.
+- Implemented Chi Square termination test.
+- Implemented functions to analyze tree structure.
 
-- Week 1: Successfully classify instances using a single decision tree
-- Week 2: Successfully classify instances using random forest
-- Week 3: Gather all data/results needed for report
-- Week 4: Complete report
+## kaggle Submission
+
+Leaderboard position 7 achieved with accuracy 0.75530 on March 7th.
