@@ -24,13 +24,13 @@ UNM CS 529 Project 1: Development of random forest classifier from scratch.
 ### Code Manifest
 | File Name | Description |
 | --- | --- |
-| `build_decision_tree.py` | file desc |
-| `build_random_forest.py` | file desc |
-| `build_decision_tree.py` | file desc |
-| `build_random_forest.py` | file desc |
-| `build_decision_tree.py` | file desc |
-| `build_random_forest.py` | file desc |
-| `build_decision_tree.py` | file desc |
+| `training/build_decision_tree.py` | This file contains the implementations that build the decision tree and also the driver to call the build decision tree |
+| `training/build_random_forest.py` | This file contains the implementations that build the random forest and also the driver to call the build random forest  |
+| `Tree/Branch.py` | This file has a single Branch class declared that represents the branches between tree nodes  |
+| `Tree/Forest.py` | This file has the declaration of the Forest class that represents a collection of the decision trees   |
+| `Tree/Leaf.py` | This file has the declaration of the Leaf class we use to model the leaf nodes in the decision tree.   |
+| `Tree/Node.py` | This file has the declaration of the Node class we use to define a Node in a tree other than Leaf nodes . |
+| `Tree/Tree.py` | This file contains the definition of the Tree class which is the parent of the Branch, Node, and Leaf  classes. |
 | `classification/classify.py` | Contains functions for classifying test instances using a trained model and for creating kaggle CSV file. |
 | `validation/validate.py` | Contains functions for generating balanced accuracy and error for tree and forest models using test data split. |
 | `utils/consts.py` | Contains global constants (e.g. hyperparameters) used throughout the project. |
