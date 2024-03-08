@@ -1,47 +1,45 @@
+import pickle
+import time
 import pandas as pd
 from scipy.stats import chi2   
-from utils.consts import *
-from tree.Leaf import Leaf
 from tree.Branch import Branch
+from tree.Leaf import Leaf
 from tree.Node import Node
+from tree.Tree import Tree
+from utils.consts import *
 from utils.impurity import *
-import time
-import statistics as st
-import pickle
+from utils.dataframeutils import split_data, handle_missing_values_train
 from validation.validate import get_tree_acc
-from utils.dataframeutils import split_data , handle_missing_values_train
 
 
-
-def build_tree(df, seen_features, split_metric='entropy', imbalance_factor=1.0, level=0):
+def build_tree(df: pd.DataFrame, seen_features: set[str], split_metric: str='entropy', imbalance_factor: float=1.0, level: int=0) -> Tree:
     """ Returns a decision tree object built upon the provided data.
 
         Parameters:
-            df: a Pandas dataframe
-            seen_features: a set of features which have already been
-                used to split data at some point in this path
-            split_metric (str): indicates which split metric to use
-                with information gain. Options are the following:
+            df: a pandas dataframe
+            seen_features: a set of categorical features which have already been used to split
+                data at some point in this path
+            split_metric: indicates which information gain split metric to use. Options are the
+                following:
                     'entropy': uses entropy
                     'gini': uses Gini index
                     'misclassification': uses misclassification error
-            imbalance_factor (float): the boost by which to increase the
-                minority class due to imbalanced data
-            level (int): the depth below the root at which this iteration
-                resides
+            imbalance_factor: the boost by which to increase the minority class due to imbalanced
+                data
+            level: the depth below the root at which this iteration resides
 
         Returns:
             A decision tree object
 
     """
 
-    # check whether all targets are the same in the provided dataset
+    # if all class values are the same, return a leaf with that class
     if len(pd.unique(df[target_column])) == 1:
         return Leaf(list(df[target_column])[0])
 
-    # limit tree depth to predefined value
+    # limit tree depth to predefined value, if value exceeded, return a leaf with weighted
+    # mean/mode of dataset
     if level == max_depth and level > 0:
-        # take weighted mode of classes
         if len(df.loc[df[target_column] == 0]) > imbalance_factor * len(df.loc[df[target_column] == 1]):
             return Leaf(0)
         else:
@@ -79,17 +77,17 @@ def build_tree(df, seen_features, split_metric='entropy', imbalance_factor=1.0, 
                 max_score_feature = continuous_feature
                 continuous_cutoff_value = feature_cutoff_value
 
+    # update set of seen features if a categorical feature is selected to split upon
     if max_score_feature in categorical_features:
         seen_features.add(max_score_feature)
 
     if max_feature_score == 0 or max_score_feature == '':
-        # take weighted mode of classes
         if len(df.loc[df[target_column] == 0]) > imbalance_factor * len(df.loc[df[target_column] == 1]):
             return Leaf(0)
         else:
             return Leaf(1)
             
-    # check if split is recommended by chi squared test
+    # check if split is recommended by chi square test
     split_chi_squared_value = 0
     degrees_of_freedom = 0
     if max_score_feature in categorical_features:
@@ -100,8 +98,8 @@ def build_tree(df, seen_features, split_metric='entropy', imbalance_factor=1.0, 
         degrees_of_freedom = len(pd.unique(df[target_column])) - 1
     chi_squared_table_value = chi2.ppf(chi_square_alpha, degrees_of_freedom)
 
+    # if chi square test doesn't recommend a split, return a leaf
     if chi_squared_table_value > split_chi_squared_value:
-        # take weighted mode of classes
         if len(df.loc[df[target_column] == 0]) > imbalance_factor * len(df.loc[df[target_column] == 1]):
             return Leaf(0)
         else:
@@ -138,11 +136,7 @@ def build_tree(df, seen_features, split_metric='entropy', imbalance_factor=1.0, 
 
 
 if __name__ == "__main__":
-    """
-    Main method for testing
-    """
-
-    start_time = time.time()
+    """ Main method for generating a single decision tree """
 
     # read entire training dataset and handle missing values
     whole_training_data = pd.read_csv('data/train.csv')
@@ -151,20 +145,21 @@ if __name__ == "__main__":
     # divide into separate training and testing datasets
     (training_data, testing_data) = split_data(whole_training_data, 1, 1, False)
 
+    # sample rows as desired
     is_fraud_rows = training_data.loc[training_data[target_column] == 1]
     is_not_fraud_rows = training_data.loc[training_data[target_column] == 0]
     sampled_is_not_fraud_rows = is_not_fraud_rows.sample(frac=1.0)
     sampled_training_data = pd.concat([is_fraud_rows, sampled_is_not_fraud_rows], axis=0).reset_index(drop=True)
 
+    t0 = time.time()
     tree = build_tree(sampled_training_data, imbalance_factor=len(is_not_fraud_rows) / len(is_fraud_rows))
-    tree_build_time = time.time() - start_time
-    print(f'Time to build tree ({len(sampled_training_data)} rows): {time.time() - start_time} seconds')
-    start_time = time.time()
+    print(f'Time to build tree ({len(sampled_training_data)} rows): {time.time() - t0} seconds')
 
+    t0 = time.time()
     (tree_err, tree_acc) = get_tree_acc(tree, testing_data)
-    print(f'Tree accuracy (generated in {time.time() - start_time} seconds): {tree_acc}')
+    print(f'Tree accuracy (generated in {time.time() - t0} seconds): {tree_acc}')
 
     # save tree model to file
-    file = open(f'tree-{tree_acc}-acc-{int(tree_build_time)}-seconds-{len(sampled_training_data)}-of-{len(whole_training_data)}-rows', 'wb')
+    file = open(f'tree-{tree_acc}-acc', 'wb')
     pickle.dump(tree, file)
     file.close()
