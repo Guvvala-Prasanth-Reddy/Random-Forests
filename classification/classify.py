@@ -71,6 +71,6 @@ def generate_predictions_file(model_file: str, output_file='output.csv'):
 #if __name__ == '__main__':
 #    generate_predictions_file('models/forest_model_name', output_file='output.csv')    df = pd.read_csv('output.csv')
 
-df = pd.read_csv('output.csv')
+# df = pd.read_csv('output.csv')
 
-df.to_csv('output-with-no-blanks.csv', index=False)
+# df.to_csv('output-with-no-blanks.csv', index=False)
