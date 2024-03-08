@@ -1,17 +1,29 @@
 # Random-Forests
 Cs529 first project
 
+## instructions to install the dependencies
+'''bash
+- python -m venv YOURVENV
+- YOURENV/Scripts/activate
+- pip install requirements.txt
+''' 
+
 ## Current TODOs:
 
 Prasanth
-- [ ] Create tree structure classes
-- [ ] Implement data split metric functions (entropy, Gini, misclassification)
-
+- [x] Create tree structure classes
+- [x] Implement data split metric functions (entropy, Gini, misclassification)
+- [ ] Change the information gain function to support the regression based column types.
+- [ ] code under review and has to undergo beta testing and has to undergo beta testing before mergin with main
 Thomas
-- [ ] Implement `build_tree()`
-- [ ] Implement `classify()`
+- [x] Implement `build_tree()`
+- [x] Implement `classify()`
+- [ ] find the recently pushed code and make change to build_tree acccording to the changes
+- [ ] code under review and has to undergo beta testing before merging with main
 
-Next meeting: Tuesday, February 6th, 2:00 pm
+Next meeting: Tuesday, February 8th, Time is yet to be decided
+
+Futher tasks will be added soon as the meeting completes.
 
 ## Tentative Schedule:
 
