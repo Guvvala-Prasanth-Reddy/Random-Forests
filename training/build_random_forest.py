@@ -1,22 +1,30 @@
+import pickle
+import sys
+import time
+import pandas as pd
+from training.build_decision_tree import build_tree
 from tree.Forest import Forest
 from tree.Node import Node
+from tree.Tree import Tree
 from utils.consts import *
-from training.build_decision_tree import build_tree
-import pandas as pd
 from utils.dataframeutils import *
 from validation.validate import get_tree_acc, get_forest_acc
-import time
-from utils.dataframeutils import handle_missing_values_train
-import sys
-import pickle
 
-sys.setrecursionlimit( 10**8)
-def dfs(tree , level ):
-    if( type(tree) is Node ):
+sys.setrecursionlimit(10**8)
+
+
+def dfs(tree: Tree, level: int):
+    """ Function to traverse a Tree object and provide information about its structure
+
+        Parameters:
+            tree: a Tree object
+            level: an integer representing the current tree depth
+    """
+    if(type(tree) is Node):
         print("feature : " , tree.feature , "at level" , level)
         for i in tree.branches:
-            print( i.feature_value)
-            dfs(i.tree , level+1)
+            print(i.feature_value)
+            dfs(i.tree, level+1)
     else:
         print(tree.target)
 
@@ -25,28 +33,31 @@ def build_random_forest(training_df: pd.DataFrame, testing_df: pd.DataFrame, num
     """ Constructs a random forest using the provided training data
 
         Parameters:
-            df: a dataframe of training data
+            training_df: a pandas DataFrame of training data
+            testing_df: a pandas DataFrame of testing data
             num_trees: number of trees to include in the forest
 
         Returns:
             a Forest object representing the random forest trained on the
-                provided data
+                provided training DataFrame
     """
 
+    # these parameters indicate the fraction of columns and rows to keep when bagging
+    # the provided DataFrame for each tree
     cols_to_keep_frac = 8/25
     rows_to_keep_frac = 1.0
     
     forest = Forest()
-    for i in range(num_trees):
+    for _ in range(num_trees):
 
-        # column bagging
+        # column bagging performed independently for each tree
         feature_col_names = list(training_df.columns)
         feature_col_names.remove(target_column)
         feature_col_names.remove('TransactionID')
         col_names_to_drop = random.sample(feature_col_names, int((1 - cols_to_keep_frac) * len(feature_col_names)))
         sampled_training_df = training_df.drop(col_names_to_drop, axis=1, inplace=False)
 
-        # row bagging --> Stratify or use all positive samples
+        # row bagging performed independently for each tree
         is_fraud_rows = sampled_training_df.loc[sampled_training_df[target_column] == 1]
         is_not_fraud_rows = sampled_training_df.loc[sampled_training_df[target_column] == 0]
         sampled_is_not_fraud_rows = is_not_fraud_rows.sample(frac=rows_to_keep_frac, replace=True)
@@ -58,22 +69,19 @@ def build_random_forest(training_df: pd.DataFrame, testing_df: pd.DataFrame, num
         t0 = time.time()
         tree = build_tree(
             sampled_training_df,
-           set(),
+            set(),
             split_metric='entropy',
             imbalance_factor=imbalance_factor
         )
 
-        (tree_err, tree_acc) = get_tree_acc(tree, testing_df)
         forest.add_tree(tree)
-
-        print(f'Tree {i + 1} of {num_trees} completed with accuracy {tree_acc} in {time.time() - t0} seconds')
 
     return forest
 
 
 if __name__ == "__main__":
-
-    t0 = time.time()
+    """ Main method used for generating Forest object and writing it to file
+    """
 
     # read entire training dataset and handle missing values
     whole_training_data = pd.read_csv('data/train.csv')
@@ -82,17 +90,20 @@ if __name__ == "__main__":
     # divide into separate training and testing datasets
     (training_data, testing_data) = split_data(whole_training_data, 1, 1, False)
 
-    forest = build_random_forest(training_data, testing_data, num_trees=no_of_trees_in_forest)
-    
-    forest_build_time = time.time() - t0
+    print('Training forest...')
     t0 = time.time()
-    print(f'Forest build in {forest_build_time} seconds')
+    forest = build_random_forest(training_data, testing_data, num_trees=no_of_trees_in_forest)
+    print(f'Forest built in {time.time() - t0} seconds')
 
     # get the accuracy of the forest
+    t0 = time.time()
     (forest_err, forest_acc) = get_forest_acc(forest, testing_data)
-    print(f'Forest accuracy {forest_acc} in {time.time() - t0} seconds')
+    print(f'Forest validated with accuracy {forest_acc} in {time.time() - t0} seconds')
+
+    forest_model_name = 'models/forest-{no_of_trees_in_forest}-trees-{forest_acc}-acc'
     
-    file = open(f'models/forest-{no_of_trees_in_forest}-trees-{forest_acc}-acc', 'wb')
+    print(f'Writing forest object file to {forest_model_name}')
+    file = open(forest_model_name, 'wb')
     pickle.dump(forest, file)
     file.close()
 
