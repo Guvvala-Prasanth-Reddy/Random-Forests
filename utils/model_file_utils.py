@@ -1,8 +1,8 @@
 import pickle
-from tree.Tree import Tree
+import numpy as np
 from tree.Forest import Forest
 from tree.Leaf import Leaf
-import numpy as np
+from tree.Tree import Tree
 
 
 def get_tree_node_count(tree: Tree) -> int:
@@ -25,7 +25,7 @@ def get_tree_node_count(tree: Tree) -> int:
     
 
 def get_tree_depth(tree: Tree) -> int:
-    """ Returns the max depth of the provided tree model
+    """ Returns the max depth of the provided tree object
 
         Parameters:
             tree: A Tree object
@@ -42,11 +42,12 @@ def get_tree_depth(tree: Tree) -> int:
             tree_path_depths[idx] = 1 + get_tree_depth(branch.tree)
         return np.max(tree_path_depths)
 
+
 def read_forest_model(filepath: str) -> Forest:
-    """ Reads a Forest object from file and returns it.
+    """ Reads a Forest object from file and returns it
 
         Parameters:
-            filepath: the path to the file containing the forest model
+            filepath: the path to the file containing the Forest object
 
         Returns
             the Forest object represented by the provided file
@@ -59,11 +60,12 @@ def read_forest_model(filepath: str) -> Forest:
         print('Error reading model from file. Exiting.')
         exit(1)
 
+
 def read_tree_model(filepath: str) -> Tree:
     """ Reads a Tree object from file and returns it.
 
         Parameters:
-            filepath: the path to the file containing the tree model
+            filepath: the path to the file containing the tree object
 
         Returns
             the Tree object represented by the provided file
