@@ -2,7 +2,7 @@
 
 ## Description
 
-UNM CS 529 Project 1. Random forests developed from scratch.
+UNM CS 529 Project 1: Development of random forest classifier from scratch.
 
 ## Instructions for Use
 
@@ -16,6 +16,10 @@ UNM CS 529 Project 1. Random forests developed from scratch.
 ### Train Random Forest
 
 `python -m training.build_random_forest path/to/train.csv`
+
+### Generate predictions using model
+
+`python -m classification.classify path/to/model path/to/test.csv`
 
 ## Developer Contributions
 
