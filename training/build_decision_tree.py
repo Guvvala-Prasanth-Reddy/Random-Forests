@@ -98,7 +98,7 @@ def build_tree(df, seen_features, split_metric='entropy', imbalance_factor=1.0, 
     else:
         split_chi_squared_value = get_chi_squared_value_continuous(df, max_score_feature, continuous_cutoff_value, imbalance_factor=imbalance_factor)
         degrees_of_freedom = len(pd.unique(df[target_column])) - 1
-    chi_squared_table_value = chi2.ppf(confidence_interval, degrees_of_freedom)
+    chi_squared_table_value = chi2.ppf(chi_square_alpha, degrees_of_freedom)
 
     if chi_squared_table_value > split_chi_squared_value:
         # take weighted mode of classes
