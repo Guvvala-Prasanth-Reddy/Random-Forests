@@ -31,12 +31,12 @@ UNM CS 529 Project 1: Development of random forest classifier from scratch.
 | `build_decision_tree.py` | file desc |
 | `build_random_forest.py` | file desc |
 | `build_decision_tree.py` | file desc |
-| `build_random_forest.py` | file desc |
-| `build_random_forest.py` | file desc |
-| `build_random_forest.py` | file desc |
-| `build_random_forest.py` | file desc |
-| `build_random_forest.py` | file desc |
-| `build_random_forest.py` | file desc |
+| `classification/classify.py` | Contains functions for classifying test instances using a trained model and for creating kaggle CSV file. |
+| `validation/validate.py` | Contains functions for generating balanced accuracy and error for tree and forest models using test data split. |
+| `utils/consts.py` | Contains global constants (e.g. hyperparameters) used throughout the project. |
+| `utils/dataframeutils.py` | Contains functions for performing splits and sampling on Pandas dataframes. |
+| `util/impurity.py` | Contains functions for calculating information gain and Chi Square test value. |
+| `util/model_file_utils.py` | Contains functions for reading models from file and for performing tree structure analysis. |
 
 
 ## Developer Contributions
