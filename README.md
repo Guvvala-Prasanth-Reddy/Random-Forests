@@ -26,6 +26,18 @@ UNM CS 529 Project 1: Development of random forest classifier from scratch.
 | --- | --- |
 | `build_decision_tree.py` | file desc |
 | `build_random_forest.py` | file desc |
+| `build_decision_tree.py` | file desc |
+| `build_random_forest.py` | file desc |
+| `build_decision_tree.py` | file desc |
+| `build_random_forest.py` | file desc |
+| `build_decision_tree.py` | file desc |
+| `build_random_forest.py` | file desc |
+| `build_random_forest.py` | file desc |
+| `build_random_forest.py` | file desc |
+| `build_random_forest.py` | file desc |
+| `build_random_forest.py` | file desc |
+| `build_random_forest.py` | file desc |
+
 
 ## Developer Contributions
 
