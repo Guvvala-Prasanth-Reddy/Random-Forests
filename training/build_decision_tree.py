@@ -9,7 +9,7 @@ import time
 import statistics as st
 import pickle
 from validation.validate import get_tree_acc
-from utils.dataframeutils import split_data , handle_missing_values
+from utils.dataframeutils import split_data , handle_missing_values_train
 
 
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
 
     # read entire training dataset and handle missing values
     whole_training_data = pd.read_csv('data/train.csv')
-    whole_training_data = handle_missing_values(whole_training_data)
+    whole_training_data = handle_missing_values_train(whole_training_data)
 
     # divide into separate training and testing datasets
     (training_data, testing_data) = split_data(whole_training_data, 1, 1, False)
