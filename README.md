@@ -21,6 +21,12 @@ UNM CS 529 Project 1: Development of random forest classifier from scratch.
 
 `python -m classification.classify path/to/model path/to/test.csv`
 
+### Code Manifest
+| File Name | Description |
+| --- | --- |
+| `build_decision_tree.py` | file desc |
+| `build_random_forest.py` | file desc |
+
 ## Developer Contributions
 
 Prasanth Guvvala
