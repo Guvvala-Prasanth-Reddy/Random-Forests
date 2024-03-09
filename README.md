@@ -15,11 +15,19 @@ UNM CS 529 Project 1: Development of random forest classifier from scratch.
 
 ### Train Random Forest
 
-`python -m training.build_random_forest path/to/train.csv`
+Specify the location of your training CSV file using the `training_data_path` variable in `utils/consts.py`. Then run:
+
+`python -m training.build_random_forest`
+
+A file will be generated containing the trained model and saved in the `models/` directory.
 
 ### Generate predictions using model
 
-`python -m classification.classify path/to/model path/to/test.csv`
+Specify the location of your testing CSV file using the `testing_data_path` variable in `utils/consts.py`. Then run:
+
+`python -m classification.classify path/to/model`
+
+where `path/to/model` is the path of the forest model to use for generating the file.
 
 ### Code Manifest
 | File Name | Description |
