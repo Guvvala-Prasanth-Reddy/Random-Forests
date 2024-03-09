@@ -32,7 +32,7 @@ def handle_missing_values_test(df: pd.DataFrame) -> pd.DataFrame:
         else:
             feature_missing_value_replacement_dict[feature] = df.get(feature).mean()
 
-        df[[feature]].fillna(value=feature_missing_value_replacement_dict[feature], inplace=True)
+    df.fillna(value=feature_missing_value_replacement_dict, inplace=True)
 
     return df
 
