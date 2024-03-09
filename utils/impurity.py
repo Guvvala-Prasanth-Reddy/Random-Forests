@@ -1,17 +1,22 @@
+from typing import Callable
 import pandas as pd
+from numba import jit
 import numpy as np
 from utils.consts import *
-from numba import jit
-from typing import Callable
 
-def get_info_gain_categorical(impurity_function , df: pd.DataFrame , feature:str, imbalance_factor=1.0) -> float:
+def get_info_gain_categorical(impurity_function, df: pd.DataFrame, feature:str, imbalance_factor=1.0) -> float:
     """ Returns the information gain of the provided dataset considering a split on the provided
         categorical feature.
 
         Parameters:
-            impurity_function : impurity function eg : entropy , gini_index , missclassification_error
-            df : The data before splitting on feature
-            feature : the feature i.e being considered for splitting criteria
+            impurity_function: the function to use in determining the impurity of the proposed featuure split
+                (entropy, gini_index, or missclassification_error)
+            df: The data before splitting on the feature
+            feature: the feature being considered for splitting criteria
+            imbalance_factor: the imbalance between classes in the original dataset
+
+        Returns:
+            the information gain of splitting the dataset along the indicated categorical feature
     """
 
     info_gain = impurity_function(df)
@@ -19,15 +24,43 @@ def get_info_gain_categorical(impurity_function , df: pd.DataFrame , feature:str
         info_gain -= len(df.loc[df[feature] == feature_value]) / len(df) * impurity_function(df.loc[df[feature] == feature_value], imbalance_factor)
     return info_gain
 
+
 def get_info_gain_continuous_cuda(df: pd.DataFrame, feature: str, split_metric: str, imbalance_factor: float=1.0) -> tuple[float, float]:
     """ Returns the information gain of the provided continuous feature using GPU
+    
+        Parameters:
+            df: The data before splitting on the feature
+            feature: the feature being considered for splitting criteria
+            split_metric: the information gain criteria method as a string
+            imbalance_factor: the imbalance between classes in the original dataset
+
+        Returns:
+            a tuple containing the information gain of splitting the dataset along the
+                indicated continuous feature as well as the value across which the data
+                should be split to maximize information gain
     """
     df_sorted = df.sort_values(by=feature, inplace=False)
     return cuda_info_gain(df_sorted[feature].to_numpy(), df_sorted[target_column].to_numpy(), split_metric, imbalance_factor=imbalance_factor)
 
+
 @jit(target_backend='cuda', nopython=True)                         
 def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric: str='entropy', imbalance_factor: float=1.0) -> tuple[float, float]:
-    """ Testing CUDA implementation of continuous info gain
+    """ Returns the information gain of the provided continuous feature using GPU
+
+        NOTE: Typically, the code in this function would be divided into smaller
+            component functions. However, the JIT decorator was having trouble with
+            function calls within this function so it was maintained as a monolith.
+    
+        Parameters:
+            feature_array: the array of feature values
+            target_array: the array of target classes
+            split_metric: the information gain criteria method as a string
+            imbalance_factor: the imbalance between classes in the original dataset
+
+        Returns:
+            a tuple containing the information gain of splitting the dataset along the
+                indicated continuous feature as well as the value across which the data
+                should be split to maximize information gain
     """
 
     # caching these values so they are only computed once
@@ -54,6 +87,9 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric
 
     target_positive_indices = np.asarray(target_array == 1).nonzero()[0]
 
+    # for each possible split index (those where adjacent feature values correspond to
+    # differing classes), compute the information gain from performing a split there and
+    # maintain a record of the highest information gain
     for positive_index in target_positive_indices:
         for adjacent_index in [positive_index - 1, positive_index + 1]:
             if (adjacent_index > 0 and adjacent_index < len(feature_array) - 1) and (target_array[adjacent_index] != target_array[positive_index]):
@@ -105,7 +141,8 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric
                 info_gain = feature_array_impurity
                 info_gain -= len(greater_than_split_indices) / feature_array_len * greater_than_split_impurity
                 info_gain -= len(less_than_split_indices) / feature_array_len * less_than_split_impurity
-    
+
+                # only keep info  gain if it higher than any information gain previously seen for this feature 
                 if info_gain > max_info_gain:
                     max_info_gain = info_gain
                     max_info_gain_cutoff = split_value
@@ -113,14 +150,14 @@ def cuda_info_gain(feature_array: np.array, target_array: np.array, split_metric
     return (max_info_gain, max_info_gain_cutoff)
 
 
-def get_info_gain_continuous(impurity_function: Callable[[pd.DataFrame], float] , df: pd.DataFrame , feature:str) -> float:
+def get_info_gain_continuous(impurity_function: Callable[[pd.DataFrame], float] , df: pd.DataFrame , feature:str) -> tuple[float, float]:
     """ Returns the information gain of the provided dataset considering a split on the provided
         continuous feature.
 
     Parameters:
-        impurity_function : impurity function eg : entropy , gini_index , missclassification_error
-        df : The data before splitting on feature
-        feature : the feature i.e being considered for splitting criteria
+        impurity_function: impurity function eg : entropy , gini_index , missclassification_error
+        df: The data before splitting on feature
+        feature: the feature i.e being considered for splitting criteria
 
     Returns:
         (float, float): A tuple of floats, representing the maximum information gain possible splitting
@@ -173,10 +210,11 @@ def get_list_of_probabilities_classification(df: pd.DataFrame, imbalance_factor:
     """ Returns a series of probabilites of occurences of different values in the feature column
 
         Parameters:
-            df : The data before splitting on feature
+            df: The data before splitting on feature
+            imbalance_factor: the imbalance between classes in the original dataset
 
         Returns:
-            (np.array): An array containing the proportion of each class in relation to the total
+            an array containing the proportion of each class in relation to the total
                 number of instances, in no specified order
     """
 
@@ -194,7 +232,11 @@ def get_entropy_score(df: pd.DataFrame, imbalance_factor: float=1.0) -> float:
     """ Returns the entropy calculation of dataframe by considering feature column as the target
 
         Parameters:
-            df : The data before splitting on feature
+            df: The data before splitting on feature
+            imbalance_factor: the imbalance between classes in the original dataset
+
+        Returns:
+            the impurity of the dataset using the entropy metric
     """
 
     # split this into two lines so that the function call to get_list_of_probabilities_classification()
@@ -207,8 +249,13 @@ def get_gini_score(df: pd.DataFrame, imbalance_factor: float=1.0) -> float:
     """ Returns the gini_index calculation of dataframe by considering feature column as the target
 
         Parameters:
-            df : The data before splitting on feature
+            df: The data before splitting on feature
+            imbalance_factor: the imbalance between classes in the original dataset
+
+        Returns:
+            the impurity of the dataset using the Gini index metric
     """
+    
     return 1 - np.sum(np.square(get_list_of_probabilities_classification(df, imbalance_factor)))
 
     
@@ -216,10 +263,14 @@ def get_misclassification_score(df: pd.DataFrame, imbalance_factor: float=1.0) -
     """ Returns the gini_index calculation of dataframe by considering feature column as the target
 
         Parameters:
-            df : The data before splitting on feature
-            feature : the feature i.e being considered for splitting criteria ( mainly target )
+            df: The data before splitting on feature
+            imbalance_factor: the imbalance between classes in the original dataset
+
+        Returns:
+            the impurity of the dataset using the misclassification error metric
     """
     return 1 - np.max(get_list_of_probabilities_classification(df, imbalance_factor))
+
 
 def get_chi_squared_value_categorical(df: pd.DataFrame, feature: str, imbalance_factor: float=1.0) -> float:
     """ Computes the chi squared value of the provided dataset to be used in comparison
@@ -230,9 +281,10 @@ def get_chi_squared_value_categorical(df: pd.DataFrame, feature: str, imbalance_
         Parameters:
             df: A Pandas dataframe
             feature: The categorical feature of the dataframe on which the split is being made
+            imbalance_factor: the imbalance between classes in the original dataset
 
         Returns:
-            float: The chi squared value of the dataset on the indicated feature split
+            float: The chi square value of the dataset on the indicated feature split
     """
 
     chi_squared_value = 0
@@ -258,6 +310,7 @@ def get_chi_squared_value_categorical(df: pd.DataFrame, feature: str, imbalance_
             chi_squared_value += ((observation - expectation) ** 2) / expectation
 
     return chi_squared_value
+
 
 def get_chi_squared_value_continuous(df: pd.DataFrame, feature: str, cutoff_value: float, imbalance_factor: float=1.0) -> float:
     """ Computes the chi squared value of the provided dataset to be used in comparison
