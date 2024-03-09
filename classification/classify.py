@@ -52,9 +52,9 @@ def forest_classify(df: pd.DataFrame, forest: Forest) -> str:
             the class label predicted by the Forest
     """
     
-    classification_results = np.full(len(forest.trees), '', dtype='str')
-    for (idx, tree) in enumerate(forest.trees):
-        classification_results[idx] = tree_classify(df, tree)
+    classification_results = []
+    for tree in forest.trees:
+        classification_results.append(tree_classify(df, tree))
 
     return st.mode(np.array(classification_results))
 
