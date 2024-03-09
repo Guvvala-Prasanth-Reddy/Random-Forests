@@ -55,4 +55,4 @@ Thomas Fisher
 
 ## kaggle Submission
 
-Leaderboard position 7 achieved with accuracy 0.75530 on March 7th.
+Leaderboard position 4 achieved with accuracy 0.78878 on March 8th.
