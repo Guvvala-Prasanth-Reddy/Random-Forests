@@ -1,33 +1,66 @@
 # Random-Forests
-Cs529 first project
 
-## instructions to install the dependencies
-'''bash
+## Description
+
+UNM CS 529 Project 1: Development of random forest classifier from scratch.
+
+## Instructions for Use
+
+### Instructions to install the dependencies
+```bash
 - python -m venv YOURVENV
 - YOURENV/Scripts/activate
 - pip install requirements.txt
-''' 
+```
 
-## Current TODOs:
+### Train Random Forest
 
-Prasanth
-- [x] Create tree structure classes
-- [x] Implement data split metric functions (entropy, Gini, misclassification)
-- [ ] Change the information gain function to support the regression based column types.
-- [ ] code under review and has to undergo beta testing and has to undergo beta testing before mergin with main
-Thomas
-- [x] Implement `build_tree()`
-- [x] Implement `classify()`
-- [ ] find the recently pushed code and make change to build_tree acccording to the changes
-- [ ] code under review and has to undergo beta testing before merging with main
+Specify the location of your training CSV file using the `training_data_path` variable in `utils/consts.py`. Then run:
 
-Next meeting: Tuesday, February 8th, Time is yet to be decided
+`python -m training.build_random_forest`
 
-Futher tasks will be added soon as the meeting completes.
+A file will be generated containing the trained model and saved in the `models/` directory.
 
-## Tentative Schedule:
+### Generate predictions using model
 
-- Week 1: Successfully classify instances using a single decision tree
-- Week 2: Successfully classify instances using random forest
-- Week 3: Gather all data/results needed for report
-- Week 4: Complete report
+Specify the location of your testing CSV file using the `testing_data_path` variable in `utils/consts.py`. Then run:
+
+`python -m classification.classify path/to/model`
+
+where `path/to/model` is the path of the forest model to use for generating the file.
+
+### Code Manifest
+| File Name | Description |
+| --- | --- |
+| `training/build_decision_tree.py` | This file contains the implementations that build the decision tree and also the driver to call the build decision tree |
+| `training/build_random_forest.py` | This file contains the implementations that build the random forest and also the driver to call the build random forest  |
+| `Tree/Branch.py` | This file has a single Branch class declared that represents the branches between tree nodes  |
+| `Tree/Forest.py` | This file has the declaration of the Forest class that represents a collection of the decision trees   |
+| `Tree/Leaf.py` | This file has the declaration of the Leaf class we use to model the leaf nodes in the decision tree.   |
+| `Tree/Node.py` | This file has the declaration of the Node class we use to define a Node in a tree other than Leaf nodes . |
+| `Tree/Tree.py` | This file contains the definition of the Tree class which is the parent of the Branch, Node, and Leaf  classes. |
+| `classification/classify.py` | Contains functions for classifying test instances using a trained model and for creating kaggle CSV file. |
+| `validation/validate.py` | Contains functions for generating balanced accuracy and error for tree and forest models using test data split. |
+| `utils/consts.py` | Contains global constants (e.g. hyperparameters) used throughout the project. |
+| `utils/dataframeutils.py` | Contains functions for performing splits and sampling on Pandas dataframes. |
+| `util/impurity.py` | Contains functions for calculating information gain and Chi Square test value. |
+| `util/model_file_utils.py` | Contains functions for reading models from file and for performing tree structure analysis. |
+
+
+## Developer Contributions
+
+Prasanth Guvvala
+- Implemented handling of missing value functions.
+- Implemented information gain criteria methods.
+- Implemented custom tree data objects.
+- Implemented methods to sample and split data into testing and training sets.
+
+Thomas Fisher
+- Implemented function to build decision tree.
+- Implemented validation functions for trees and forests.
+- Implemented Chi Square termination test.
+- Implemented functions to analyze tree structure.
+
+## kaggle Submission
+
+Leaderboard position 4 achieved with accuracy 0.78878 on March 8th.
