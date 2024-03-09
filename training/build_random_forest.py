@@ -84,7 +84,7 @@ if __name__ == "__main__":
     """
 
     # read entire training dataset and handle missing values
-    whole_training_data = pd.read_csv('data/train.csv')
+    whole_training_data = pd.read_csv(training_data_path)
     whole_training_data = handle_missing_values_train(whole_training_data)
 
     # divide into separate training and testing datasets

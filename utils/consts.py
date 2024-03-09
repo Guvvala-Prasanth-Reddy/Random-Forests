@@ -1,3 +1,9 @@
+# path to training data file
+training_data_path = 'data/train.csv'
+
+# path to testing data file
+testing_data_path = 'data/test.csv'
+
 # represents the set of categorical features from our dataset
 categorical_features=["ProductCD",
                       "card1", 

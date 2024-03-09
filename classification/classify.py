@@ -74,7 +74,7 @@ def generate_predictions_file(model_file_path: str, output_file: str='output.csv
     forest_model = read_forest_model(model_file_path)
 
     # read testing data and hanlde missing values
-    testing_df = pd.read_csv('data/test.csv')
+    testing_df = pd.read_csv(testing_data_path)
     testing_df = handle_missing_values_test(testing_df)
 
     # generate predictions and concatenate with transaction ids
@@ -83,7 +83,7 @@ def generate_predictions_file(model_file_path: str, output_file: str='output.csv
 
     # fill in any missing predictions with specified value
     predictions_with_ids.rename(columns={0: target_column}, inplace=True)
-    predictions_with_ids.fillna(0, inplace=True)
+    predictions_with_ids.fillna(1, inplace=True)
     predictions_with_ids[target_column] = predictions_with_ids[target_column].astype(int)
     
     predictions_with_ids.to_csv(output_file, index=False)
